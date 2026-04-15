@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="assets/logo.png" alt="Abstergo Intelligence Logo" width="250">
-</p>
+
 
 # <p align="center">COMING SOON</p>
 
