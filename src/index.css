@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #050505;
+  color: #e2e8f0;
+  overscroll-behavior: none;
+}
+
+/* Custom Leaflet Styles for Dark Theme */
+.leaflet-container {
+  background: #050505 !important;
+  font-family: inherit !important;
+}
+
+.leaflet-bar {
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.1) !important;
+}
+
+.leaflet-bar a {
+  background-color: rgba(17, 17, 17, 0.9) !important;
+  color: #06b6d4 !important;
+  border-bottom: 1px solid rgba(6, 182, 212, 0.2) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: rgba(6, 182, 212, 0.2) !important;
+  color: #22d3ee !important;
+}
+
+.leaflet-bar a.leaflet-disabled {
+  background-color: rgba(17, 17, 17, 0.5) !important;
+  color: #475569 !important;
+}
+
+/* Leaflet Draw specific overrides */
+.leaflet-draw-toolbar a {
+  background-image: url('leaflet-draw/dist/images/spritesheet.png');
+}
+
+.leaflet-draw-actions {
+  background: rgba(17, 17, 17, 0.9) !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+}
+
+.leaflet-draw-actions a {
+  color: #06b6d4 !important;
+  background-color: transparent !important;
+}
+
+.leaflet-draw-actions a:hover {
+  color: #22d3ee !important;
+  background-color: rgba(6, 182, 212, 0.1) !important;
+}
+
+.leaflet-draw-tooltip {
+  background: rgba(17, 17, 17, 0.9) !important;
+  border: 1px solid rgba(6, 182, 212, 0.5) !important;
+  color: #06b6d4 !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2) !important;
+}
+
+.leaflet-draw-tooltip-single {
+  margin-top: 0;
+}
+
+.leaflet-draw-tooltip-subtext {
+  color: #94a3b8 !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(17, 17, 17, 0.8) !important;
+  color: #64748b !important;
+}
+
+.leaflet-control-attribution a {
+  color: #06b6d4 !important;
+}
+
+/* Custom Popup Styles */
+.leaflet-popup-content-wrapper {
+  background: #111111 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+  border-radius: 8px !important;
+}
+
+.leaflet-popup-tip {
+  background: #111111 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+}
+
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #06b6d4 !important;
+}
+
+/* Custom scrollbar for the sidebar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.4);
+}
