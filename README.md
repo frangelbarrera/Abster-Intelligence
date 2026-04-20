@@ -12,7 +12,7 @@ Abster Intelligence is a professional-grade, privacy-centric open-source intelli
 
 * **Local-First Architecture:** Complete data sovereignty. All case work, chat history, and infrastructure evidence are stored safely in your browser using IndexedDB (Dexie.js). No middleman databases, no telemetry.
 
-![Reports and Evidence Center](public/images/7.jpg)
+![Reports and Evidence Center](public/images/7.png)
 
 * **Relational Graph Engine:** Interactive, physics-based network graphs powered by D3.js. Visualize interconnected nodes, geo-entities, and complex infrastructural relationships in real-time.
 
