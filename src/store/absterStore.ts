@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, LOCAL_USER } from '../lib/db';
+import { db, LOCAL_USER, type Attachment, type AIProvider } from '../lib/db';
 
 export type EntityType = 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENT' | 'DOCUMENT' | 'DEVICE' | 'EMAIL' | 'PHONE' | 'DOMAIN' | 'VEHICLE' | 'CRYPTO' | 'GENERIC';
 
@@ -11,7 +11,7 @@ export interface Entity {
   description?: string;
   lat?: number;
   lng?: number;
-  polygon?: any;
+  polygon?: { lat: number; lng: number }[];
   color?: string;
   startDate?: string;
   endDate?: string;
@@ -64,10 +64,10 @@ export interface Case {
   findings?: string;
   linkedCases?: string[];
   template?: string | null;
-  checklist?: boolean[] | any[];
-  hypotheses?: any[];
-  activityLog?: any[];
-  settings?: any;
+  checklist?: boolean[];
+  hypotheses?: { id: string; title: string; status: string; confidence: number; evidence: string; createdAt: number }[];
+  activityLog?: { id: string; type: string; message: string; timestamp: number; user?: string }[];
+  settings?: Record<string, any>;
   ownerId?: string;
   notes?: string;
 }
@@ -77,7 +77,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system' | string;
   content: string;
   timestamp: number;
-  attachments?: any[];
+  attachments?: Attachment[];
   provider?: string;
   modelId?: string | null;
 }

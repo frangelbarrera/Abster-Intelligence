@@ -60,14 +60,14 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   
   const [showEarthquakes, setShowEarthquakes] = useState(false);
-  const [earthquakeData, setEarthquakeData] = useState<any>(null);
+  const [earthquakeData, setEarthquakeData] = useState<{ features: any[] } | null>(null);
   const [showFlights, setShowFlights] = useState(false);
   const [flightDensity, setFlightDensity] = useState<25 | 50 | 100>(25);
-  const [flightsData, setFlightsData] = useState<any[]>([]);
+  const [flightsData, setFlightsData] = useState<{ lat: number; lon: number; flight?: string; hex: string; alt_baro?: number; gs?: number }[]>([]);
   const [showWildfires, setShowWildfires] = useState(false);
-  const [wildfiresData, setWildfiresData] = useState<any[]>([]);
+  const [wildfiresData, setWildfiresData] = useState<{ id: string; title: string; geometry: { coordinates: number[] }[] }[]>([]);
   const [showStorms, setShowStorms] = useState(false);
-  const [stormsData, setStormsData] = useState<any[]>([]);
+  const [stormsData, setStormsData] = useState<{ id: string; title: string; geometry: { coordinates: any }[] }[]>([]);
 
   const [drawingMode, setDrawingMode] = useState<'polygon' | 'marker' | null>(null);
   const [activePolygonPoints, setActivePolygonPoints] = useState<L.LatLng[]>([]);
@@ -105,7 +105,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
 
   // Fetch Earthquakes
   useEffect(() => {
-    let interval: any;
+    let interval: NodeJS.Timeout | undefined;
     const fetchEq = () => {
       fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson')
         .then(res => res.json())
@@ -134,7 +134,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
 
   // Fetch Flights (Using local proxy to Flightradar24 for global coverage)
   useEffect(() => {
-    let interval: any;
+    let interval: NodeJS.Timeout | undefined;
     let errorShown = false;
     const fetchFlights = async () => {
       try {
@@ -176,7 +176,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
 
   // Fetch Storms
   useEffect(() => {
-    let interval: any;
+    let interval: NodeJS.Timeout | undefined;
     const fetchStorms = () => {
       fetch('https://eonet.gsfc.nasa.gov/api/v3/events?category=severeStorms&status=open&days=7')
         .then(res => res.json())
@@ -216,7 +216,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
     setDrawingMode(null);
   };
 
-  const handleLocateAsset = (entity: any) => {
+  const handleLocateAsset = (entity: { id: string; lat?: number; lng?: number; polygon?: { lat: number; lng: number }[]; metadata?: any; name?: string }) => {
     if (!mapInstance) return;
     
     const attrs = entity.metadata || {};
@@ -449,14 +449,14 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
             {/* Entities from Store */}
             {entities.map(entity => {
               const attrs = entity.metadata || {};
-              const polygon = entity.polygon || attrs.polygon;
+              const polygon = (entity as any).polygon || attrs.polygon;
               const isPolygon = polygon && polygon.length >= 3;
               const geojson = attrs.geojson;
               const riskLevel = attrs.riskLevel;
               const lat = entity.lat !== undefined ? entity.lat : attrs.lat;
               const lng = entity.lng !== undefined ? entity.lng : attrs.lng;
               const color = entity.color || attrs.color || 'red';
-              const name = entity.name || (entity as any).title;
+              const name = entity.name || (entity as any).title || (entity as any).id;
               
               if (geojson) {
                 let riskColor = 'gray';
@@ -480,7 +480,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
                   </GeoJSON>
                 );
               } else if (isPolygon) {
-                const positions = polygon.map((p: any) => new L.LatLng(p.lat, p.lng));
+                const positions = polygon.map((p: { lat: number; lng: number }) => new L.LatLng(p.lat, p.lng));
                 return (
                   <Polygon 
                     key={entity.id} 
@@ -520,7 +520,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
             ))}
 
             {/* Earthquakes */}
-            {showEarthquakes && earthquakeData?.features?.map((eq: any) => {
+            {showEarthquakes && earthquakeData?.features?.map((eq: { id: string; geometry: { coordinates: [number, number] }; properties: { mag: number; title: string; place: string } }) => {
               const [lng, lat] = eq.geometry.coordinates;
               const mag = eq.properties.mag;
               return (
@@ -531,7 +531,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
             })}
 
             {/* Flights */}
-            {showFlights && flightsData.map((flight: any) => {
+            {showFlights && flightsData.map((flight) => {
               if (!flight.lat || !flight.lon) return null;
               return (
                 <CircleMarker key={flight.hex} center={[flight.lat, flight.lon]} radius={3} pathOptions={{ color: 'transparent', fillColor: '#ffffff', fillOpacity: 0.8 }}>
@@ -556,7 +556,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
                 noWrap={true}
               />
             )}
-            {showWildfires && wildfiresData.map((fire: any) => {
+            {showWildfires && wildfiresData.map((fire) => {
               const coords = fire.geometry[0].coordinates;
               if (!Array.isArray(coords) || coords.length < 2) return null;
               const [lng, lat] = coords;
@@ -568,7 +568,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
             })}
 
             {/* Severe Storms */}
-            {showStorms && stormsData.map((storm: any) => {
+            {showStorms && stormsData.map((storm) => {
               const coords = storm.geometry[0].coordinates;
               let lng: number, lat: number;
               if (Array.isArray(coords[0])) { [lng, lat] = coords[0]; } else { [lng, lat] = coords; }

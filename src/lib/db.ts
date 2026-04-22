@@ -1,5 +1,32 @@
 import Dexie, { type Table } from 'dexie';
 
+export interface AIModel {
+  id: string;
+  name: string;
+  badge?: string;
+}
+
+export interface AIProvider {
+  id: string;
+  type: string;
+  name: string;
+  apiKey?: string;
+  baseUrl?: string;
+  selectedModel?: string;
+  models: AIModel[];
+  isWorking?: boolean;
+  testing?: boolean;
+  testResult?: any;
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url?: string;
+}
+
 export interface LocalEntity {
   id: string;
   caseId: string;
@@ -8,7 +35,7 @@ export interface LocalEntity {
   description?: string;
   lat?: number;
   lng?: number;
-  polygon?: any;
+  polygon?: { lat: number; lng: number }[];
   color?: string;
   startDate?: string;
   endDate?: string;
@@ -64,9 +91,9 @@ export interface LocalCase {
   linkedCases: string[];
   template: string | null;
   checklist: boolean[];
-  hypotheses: any[];
-  activityLog: any[];
-  settings: any;
+  hypotheses: { id: string; title: string; status: string; confidence: number; evidence: string; createdAt: number }[];
+  activityLog: { id: string; type: string; message: string; timestamp: number; user?: string }[];
+  settings: Record<string, any>;
   ownerId: string;
 }
 
@@ -76,7 +103,7 @@ export interface LocalChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
-  attachments?: any[];
+  attachments?: Attachment[];
   provider?: string;
   modelId?: string | null;
 }
@@ -89,6 +116,7 @@ export interface LocalChat {
   createdAt: string;
   updatedAt: string;
   metadata?: Record<string, any>;
+  messages?: LocalChatMessage[]; // Added for easier mapping in store
 }
 
 export interface LocalVaultFile {
@@ -113,7 +141,7 @@ export interface LocalNote {
 
 export interface LocalSettings {
   id: string; // 'current_user_settings'
-  providers: any[];
+  providers: AIProvider[];
   selectedProviderId: string | null;
   selectedModelId: string | null;
   activeChatId: string | null;

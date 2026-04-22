@@ -11,6 +11,7 @@ import {
 import { ChatSidebar } from './chat/ChatSidebar';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { ChatInput } from './chat/ChatInput';
+import { formatTime } from '../lib/utils';
 import AbsterGraph from "./abster-graph-v4";
 import AbsterDashboard from "./abster-case-manager";
 import AbsterTimeline from "./abster-timeline";
@@ -23,21 +24,42 @@ const GeoIntMap = dynamic(() => import("./GeoIntMap"), { ssr: false });
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 const generateId = () => Math.random().toString(36).slice(2, 10);
-const formatTime = (date) => {
-  if (!date) return "";
-  const d = date.toDate ? date.toDate() : new Date(date);
-  const now = new Date(), diff = (now.getTime() - d.getTime()) / 1000;
-  if (diff < 60) return "now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return d.toLocaleDateString("en", { day: "2-digit", month: "short" });
-};
-const maskKey = (key) => key ? `••••••${key.slice(-3)}` : "";
-const btoa_safe = (str) => { try { return btoa(str); } catch { return str; } };
-const atob_safe = (str) => { try { return atob(str); } catch { return str; } };
+const maskKey = (key: string) => key ? `••••••${key.slice(-3)}` : "";
+const btoa_safe = (str: string) => { try { return btoa(str); } catch { return str; } };
+const atob_safe = (str: string) => { try { return atob(str); } catch { return str; } };
+
+interface Model {
+  id: string;
+  name: string;
+  badge?: string;
+}
+
+interface ProviderMeta {
+  label: string;
+  color: string;
+  dot: string;
+  keyLabel: string;
+  accessType: 'free' | 'advanced';
+  capabilities: string[];
+  defaultModels: Model[];
+  keyLabel2?: string;
+}
+
+interface AIProvider {
+  id: string;
+  type: string;
+  name: string;
+  apiKey?: string;
+  baseUrl?: string;
+  selectedModel?: string;
+  models: Model[];
+  isWorking?: boolean;
+  testing?: boolean;
+  testResult?: { ok: boolean; models?: Model[]; error?: string } | null;
+}
 
 // ─── PROVIDER CONFIG ──────────────────────────────────────────────────────────
-const PROVIDER_META = {
+const PROVIDER_META: Record<string, ProviderMeta> = {
   gemini:     { label: "Gemini",     color: "#4285F4", dot: "", keyLabel: "API Key", accessType: "free", capabilities: ["vision", "document", "video", "audio"], defaultModels: [{ id: "gemini-1.5-flash", name: "gemini-1.5-flash" }, { id: "gemini-1.5-pro", name: "gemini-1.5-pro" }, { id: "gemini-2.0-flash", name: "gemini-2.0-flash" }] },
   deepseek:   { label: "DeepSeek",   color: "#FF6B35", dot: "", keyLabel: "API Key", accessType: "free", capabilities: ["text"], defaultModels: [{ id: "deepseek-chat", name: "deepseek-chat" }, { id: "deepseek-reasoner", name: "deepseek-reasoner" }] },
   groq:       { label: "Groq",       color: "#00C853", dot: "", keyLabel: "API Key", accessType: "free", capabilities: ["text"], defaultModels: [{ id: "llama-3.1-8b-instant", name: "llama-3.1-8b" }, { id: "llama-3.1-70b-versatile", name: "llama-3.1-70b" }, { id: "mixtral-8x7b-32768", name: "mixtral-8x7b" }, { id: "llama3-70b-8192", name: "llama3-70b" }] },
@@ -78,9 +100,15 @@ const ADVANCED_CATALOG = [
   { type: "cohere",    models: [{ id: "command-r-plus", name: "Command R+", badge: "RAG" }, { id: "command-r", name: "Command R" }] },
 ];
 
-const createAdapter = (provider) => {
+const createAdapter = (provider: AIProvider) => {
   const key = provider.apiKey ? atob_safe(provider.apiKey) : "";
-  const streamText = async (messages, onChunk, onDone, onError, contextData = "") => {
+  const streamText = async (
+    messages: { role: string; content: string }[], 
+    onChunk: (chunk: string) => void, 
+    onDone: () => void, 
+    onError: (err: string) => void, 
+    contextData = ""
+  ) => {
     const userMessages = messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
     try {
       if (provider.type === "gemini") {
@@ -582,16 +610,16 @@ export default function AbsterChat() {
     setNewChatModal(false); 
     setNewChatTitle("");
   };
-  const deleteChatAction = (id) => { 
+  const deleteChatAction = (id: string) => { 
     removeChat(id); 
     if (activeChatId === id) setActiveChatId(chats.find((c) => c.id !== id)?.id || null); 
     setDeleteConfirm(null); 
   };
-  const renameChatAction = (id, title) => { 
+  const renameChatAction = (id: string, title: string) => { 
     updateChat(id, { title }); 
     setRenaming(null); 
   };
-  const duplicateChatAction = (id) => { 
+  const duplicateChatAction = (id: string) => { 
     const o = chats.find((c) => c.id === id); 
     if (!o) return; 
     const newId = generateId();
@@ -600,7 +628,8 @@ export default function AbsterChat() {
       id: newId, 
       title: `${o.title} (copy)`, 
       createdAt: new Date().toISOString(), 
-      updatedAt: new Date().toISOString() 
+      updatedAt: new Date().toISOString(),
+      messages: o.messages.map(m => ({ ...m, id: generateId() }))
     }); 
     setContextMenu(null); 
   };
@@ -611,9 +640,10 @@ export default function AbsterChat() {
     return PROVIDER_META[p.type]?.capabilities || ["text"];
   };
 
-  const handleFileSelect = (files: any) => {
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
     const caps = getModelCapabilities();
-    const validFiles = Array.from(files).filter((file: any) => {
+    const validFiles = Array.from(files).filter((file) => {
       const type = file.type;
       if (type.startsWith('image/') && !caps.includes('vision')) {
         alert(`The current model does not support images. Switch to a vision-capable model (e.g., GPT-4o, Gemini).`);
@@ -639,13 +669,20 @@ export default function AbsterChat() {
     }
   };
   const handleDrop = (e) => { e.preventDefault(); setDragOver(false); handleFileSelect(e.dataTransfer.files); };
-  const addProvider = (p) => {
-    const newP = { ...p, id: generateId(), isWorking: false, models: PROVIDER_META[p.type]?.defaultModels || [] };
+  const addProvider = (p: Partial<AIProvider>) => {
+    const newP: AIProvider = { 
+      ...p, 
+      id: generateId(), 
+      isWorking: false, 
+      models: PROVIDER_META[p.type!]?.defaultModels || [],
+      type: p.type!,
+      name: p.name || PROVIDER_META[p.type!]?.label
+    };
     setProviders((prev) => [...prev, newP]);
   };
-  const updateProvider = (id, updates) => setProviders((prev) => prev.map((p) => p.id === id ? { ...p, ...updates } : p));
-  const removeProvider = (id) => { setProviders((prev) => prev.filter((p) => p.id !== id)); if (selectedProviderId === id) { setSelectedProviderId(null); setSelectedModelId(null); } };
-  const testProvider = async (id) => {
+  const updateProvider = (id: string, updates: Partial<AIProvider>) => setProviders((prev) => prev.map((p) => p.id === id ? { ...p, ...updates } : p));
+  const removeProvider = (id: string) => { setProviders((prev) => prev.filter((p) => p.id !== id)); if (selectedProviderId === id) { setSelectedProviderId(null); setSelectedModelId(null); } };
+  const testProvider = async (id: string) => {
     const p = providers.find((x) => x.id === id);
     if (!p) return;
     updateProvider(id, { testing: true, testResult: null });
@@ -654,9 +691,9 @@ export default function AbsterChat() {
     updateProvider(id, { testing: false, isWorking: result.ok, testResult: result, models: result.ok && result.models?.length ? result.models : (p.models || PROVIDER_META[p.type]?.defaultModels || []) });
   };
 
-  const handleDirectUpload = (files: any) => {
-    if (!activeChatId || !currentUser) return;
-    Array.from(files).forEach((f: any) => {
+  const handleDirectUpload = (files: FileList | null) => {
+    if (!activeChatId || !currentUser || !files) return;
+    Array.from(files).forEach((f) => {
       let type = "document";
       if (f.type?.startsWith("image")) type = "image";
       if (f.type?.startsWith("video")) type = "video";
@@ -831,8 +868,8 @@ export default function AbsterChat() {
                     providers={providers}
                     selectedProviderId={selectedProviderId}
                     selectedModelId={selectedModelId}
-                    onSelect={(pid: any, mid: any) => { setSelectedProviderId(pid); setSelectedModelId(mid); setModelDropdownOpen(false); }}
-                    onAdvancedClick={(type: any, modelId: any, modelName: any) => { setModelDropdownOpen(false); setAdvancedAddModal({ type, modelId, modelName }); }}
+                    onSelect={(pid: string, mid: string) => { setSelectedProviderId(pid); setSelectedModelId(mid); setModelDropdownOpen(false); }}
+                    onAdvancedClick={(type: string, modelId: string, modelName: string) => { setModelDropdownOpen(false); setAdvancedAddModal({ type, modelId, modelName }); }}
                   />
                 )}
               />
@@ -1163,8 +1200,14 @@ function ModuleBtn({ mod, badge, onClick }: any) {
   );
 }
 
-function ReportsPanel({ files, onClose, onUpload, onDelete, onExpand }) {
-  const fileInputRef = useRef(null);
+function ReportsPanel({ files, onClose, onUpload, onDelete, onExpand }: {
+  files: any[];
+  onClose: () => void;
+  onUpload: (files: FileList) => void;
+  onDelete: (id: string) => void;
+  onExpand: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -1322,7 +1365,7 @@ function ReportsPanel({ files, onClose, onUpload, onDelete, onExpand }) {
   );
 }
 
-function Modal({ children, onClose }) {
+function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
       <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: 20, minWidth: 320 }} onClick={(e) => e.stopPropagation()}>{children}</div>

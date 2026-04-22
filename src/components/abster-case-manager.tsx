@@ -68,16 +68,16 @@ const DEMO = [
     tags:["laundering","cyprus","russia","crypto","corporate"], findings:"", linkedCases:["3","7"],
     template:"financial_fraud", checklist:[false,true,false,false,false,false,false,false],
     hypotheses:[
-      {id:"h1",title:"Kozlov is beneficial owner of offshore vehicle in BVI",status:"active",confidence:72,evidence:"Shell corp registry + 3 SWIFT traces",createdAt:new Date("2024-01-16T10:00:00")},
-      {id:"h2",title:"Funds are being routed via non-KYC crypto exchange in Eastern Europe",status:"active",confidence:55,evidence:"Wallet clustering analysis",createdAt:new Date("2024-01-18T09:00:00")},
-      {id:"h3",title:"Connection with Cyprus criminal network confirmed",status:"confirmed",confidence:91,evidence:"Intercept + corporate filings match",createdAt:new Date("2024-01-19T14:00:00")},
+      {id:"h1",title:"Kozlov is beneficial owner of offshore vehicle in BVI",status:"active",confidence:72,evidence:"Shell corp registry + 3 SWIFT traces",createdAt:new Date("2024-01-16T10:00:00").getTime()},
+      {id:"h2",title:"Funds are being routed via non-KYC crypto exchange in Eastern Europe",status:"active",confidence:55,evidence:"Wallet clustering analysis",createdAt:new Date("2024-01-18T09:00:00").getTime()},
+      {id:"h3",title:"Connection with Cyprus criminal network confirmed",status:"confirmed",confidence:91,evidence:"Intercept + corporate filings match",createdAt:new Date("2024-01-19T14:00:00").getTime()},
     ],
     activityLog:[
-      {id:"a1",timestamp:new Date("2024-01-15T14:30:00"),type:"created",description:"Case created",user:"Analyst Alpha"},
-      {id:"a2",timestamp:new Date("2024-01-16T09:45:00"),type:"entity_added",description:"Entity added: Viktor Kozlov (Person)",user:"Analyst Alpha"},
-      {id:"a3",timestamp:new Date("2024-01-16T11:20:00"),type:"tool_executed",description:"Tool: Email Investigator on vkozlov@...",user:"Analyst Beta"},
-      {id:"a4",timestamp:new Date("2024-01-17T16:00:00"),type:"location_added",description:"Location: Limassol, Cyprus",user:"Field Op 1"},
-      {id:"a5",timestamp:new Date("2024-01-20T16:45:00"),type:"note_added",description:"Suspicious meeting near port documented",user:"Analyst Alpha"},
+      {id:"a1",timestamp:new Date("2024-01-15T14:30:00").getTime(),type:"created",message:"Case created",user:"Analyst Alpha"},
+      {id:"a2",timestamp:new Date("2024-01-16T09:45:00").getTime(),type:"entity_added",message:"Entity added: Viktor Kozlov (Person)",user:"Analyst Alpha"},
+      {id:"a3",timestamp:new Date("2024-01-16T11:20:00").getTime(),type:"tool_executed",message:"Tool: Email Investigator on vkozlov@...",user:"Analyst Beta"},
+      {id:"a4",timestamp:new Date("2024-01-17T16:00:00").getTime(),type:"location_added",message:"Location: Limassol, Cyprus",user:"Field Op 1"},
+      {id:"a5",timestamp:new Date("2024-01-20T16:45:00").getTime(),type:"note_added",message:"Suspicious meeting near port documented",user:"Analyst Alpha"},
     ],
     settings:{autoSave:true,notifications:true,shareWithTeam:true} },
   { id:"2", codeName:"SILENT-OWL-4521", title:"Project Avalon",
@@ -89,10 +89,10 @@ const DEMO = [
     findings:"Leak by insider confirmed. Employee identified and terminated. Security measures reinforced.",
     tags:["insider","leak","closed"], linkedCases:[],
     template:"person_of_interest", checklist:[true,true,true,true,false,true,true,false],
-    hypotheses:[{id:"h4",title:"Leak was deliberate and financially motivated",status:"confirmed",confidence:96,evidence:"Communication intercepts + financial audit",createdAt:new Date("2023-12-01T10:00:00")}],
+    hypotheses:[{id:"h4",title:"Leak was deliberate and financially motivated",status:"confirmed",confidence:96,evidence:"Communication intercepts + financial audit",createdAt:new Date("2023-12-01T10:00:00").getTime()}],
     activityLog:[
-      {id:"b1",timestamp:new Date("2023-11-10T09:00:00"),type:"created",description:"Case created",user:"Analyst Beta"},
-      {id:"b2",timestamp:new Date("2024-01-18T11:20:00"),type:"status_changed",description:"Case closed with findings",user:"Analyst Beta"},
+      {id:"b1",timestamp:new Date("2023-11-10T09:00:00").getTime(),type:"created",message:"Case created",user:"Analyst Beta"},
+      {id:"b2",timestamp:new Date("2024-01-18T11:20:00").getTime(),type:"status_changed",message:"Case closed with findings",user:"Analyst Beta"},
     ],
     settings:{autoSave:true,notifications:false,shareWithTeam:true} },
   { id:"3", codeName:"PHANTOM-HAWK-2891", title:"Shadow Network",
@@ -104,12 +104,12 @@ const DEMO = [
     tags:["disinfo","sockpuppet","social-media"], findings:"", linkedCases:["1"],
     template:"disinformation", checklist:[true,true,false,false,false,false,false,false],
     hypotheses:[
-      {id:"h5",title:"Coordinated operation from state infrastructure",status:"active",confidence:63,evidence:"Infrastructure clustering + timing patterns",createdAt:new Date("2024-01-12T09:00:00")},
-      {id:"h6",title:"Main narrative: electoral destabilization",status:"active",confidence:78,evidence:"Content analysis of 1,200 posts",createdAt:new Date("2024-01-15T11:00:00")},
+      {id:"h5",title:"Coordinated operation from state infrastructure",status:"active",confidence:63,evidence:"Infrastructure clustering + timing patterns",createdAt:new Date("2024-01-12T09:00:00").getTime()},
+      {id:"h6",title:"Main narrative: electoral destabilization",status:"active",confidence:78,evidence:"Content analysis of 1,200 posts",createdAt:new Date("2024-01-15T11:00:00").getTime()},
     ],
     activityLog:[
-      {id:"c1",timestamp:new Date("2024-01-10T08:00:00"),type:"created",description:"Case created",user:"Analyst Gamma"},
-      {id:"c2",timestamp:new Date("2024-01-21T10:00:00"),type:"entity_added",description:"34 entities mapped in coordination network",user:"Analyst Alpha"},
+      {id:"c1",timestamp:new Date("2024-01-10T08:00:00").getTime(),type:"created",message:"Case created",user:"Analyst Gamma"},
+      {id:"c2",timestamp:new Date("2024-01-21T10:00:00").getTime(),type:"entity_added",message:"34 entities mapped in coordination network",user:"Analyst Alpha"},
     ],
     settings:{autoSave:true,notifications:true,shareWithTeam:false} },
   { id:"4", codeName:"IRON-BEAR-5563", title:"Operation Cerberus",
@@ -120,8 +120,8 @@ const DEMO = [
     stats:{entityCount:7,locationCount:2,eventCount:5,toolResultsCount:18,evidenceCount:6},
     tags:["crypto","ransomware","offshore"], findings:"", linkedCases:[],
     template:"cyber_incident", checklist:[true,false,false,false,false,false,false,false],
-    hypotheses:[{id:"h7",title:"RansomX group operates from Belarus",status:"active",confidence:41,evidence:"IP geolocation + language artifacts",createdAt:new Date("2024-01-07T14:00:00")}],
-    activityLog:[{id:"d1",timestamp:new Date("2024-01-05T13:00:00"),type:"created",description:"Case created",user:"Analyst Delta"}],
+    hypotheses:[{id:"h7",title:"RansomX group operates from Belarus",status:"active",confidence:41,evidence:"IP geolocation + language artifacts",createdAt:new Date("2024-01-07T14:00:00").getTime()}],
+    activityLog:[{id:"d1",timestamp:new Date("2024-01-05T13:00:00").getTime(),type:"created",message:"Case created",user:"Analyst Delta"}],
     settings:{autoSave:true,notifications:true,shareWithTeam:false} },
   { id:"5", codeName:"RAVEN-COBRA-1122", title:"Project Nightfall",
     description:"Analysis of shell company in multiple jurisdictions. Possible tax evasion structure.",
@@ -143,7 +143,7 @@ const DEMO = [
     tags:["profile","corporate"], findings:"", linkedCases:[],
     template:"person_of_interest", checklist:[true,false,false,false,false,false,false,false],
     hypotheses:[],
-    activityLog:[{id:"f1",timestamp:new Date("2024-01-18T11:00:00"),type:"created",description:"Case created",user:"Analyst Beta"}],
+    activityLog:[{id:"f1",timestamp:new Date("2024-01-18T11:00:00").getTime(),type:"created",message:"Case created",user:"Analyst Beta"}],
     settings:{autoSave:true,notifications:false,shareWithTeam:false} },
   { id:"7", codeName:"STEEL-EAGLE-3377", title:"Hydra Protocol",
     description:"Classified information trafficking network. Multiple exfiltration vectors identified.",
@@ -154,12 +154,12 @@ const DEMO = [
     tags:["classified","exfiltration","urgent"], findings:"", linkedCases:["1"],
     template:"cyber_incident", checklist:[true,true,false,false,false,false,false,false],
     hypotheses:[
-      {id:"h8",title:"Exfiltration via supply chain compromise of tier-2 vendor",status:"active",confidence:67,evidence:"Log correlation + vendor access audit",createdAt:new Date("2024-01-22T12:00:00")},
-      {id:"h9",title:"Insider with privileged access implicated",status:"active",confidence:50,evidence:"Anomalous access patterns pre-breach",createdAt:new Date("2024-01-22T15:00:00")},
+      {id:"h8",title:"Exfiltration via supply chain compromise of tier-2 vendor",status:"active",confidence:67,evidence:"Log correlation + vendor access audit",createdAt:new Date("2024-01-22T12:00:00").getTime()},
+      {id:"h9",title:"Insider with privileged access implicated",status:"active",confidence:50,evidence:"Anomalous access patterns pre-breach",createdAt:new Date("2024-01-22T15:00:00").getTime()},
     ],
     activityLog:[
-      {id:"g1",timestamp:new Date("2024-01-22T07:00:00"),type:"created",description:"Case created — URGENT",user:"Director Omega"},
-      {id:"g2",timestamp:new Date("2024-01-22T18:00:00"),type:"entity_added",description:"22 entities identified in exfil network",user:"Analyst Alpha"},
+      {id:"g1",timestamp:new Date("2024-01-22T07:00:00").getTime(),type:"created",message:"Case created — URGENT",user:"Director Omega"},
+      {id:"g2",timestamp:new Date("2024-01-22T18:00:00").getTime(),type:"entity_added",message:"22 entities identified in exfil network",user:"Analyst Alpha"},
     ],
     settings:{autoSave:true,notifications:true,shareWithTeam:false} },
 ];
@@ -533,11 +533,11 @@ const Detail = ({c,all,onBack,onEdit,onUpdate}: any) => {
   const linked=all.filter(x=>x.id!==c.id&&(c.linkedCases||[]).includes(x.id));
   const TABS=["overview","hypotheses","checklist","linked","activity"];
 
-  const addLog=(id,e)=>onUpdate(id,{activityLog:[...c.activityLog,{id:uid(),timestamp:new Date(),...e}]});
-  const saveFindings=()=>{onUpdate(c.id,{findings});addLog(c.id,{type:"updated",description:"Findings updated"});};
-  const toggleCheck=(i)=>{const cl=[...(c.checklist||[])];cl[i]=!cl[i];onUpdate(c.id,{checklist:cl});addLog(c.id,{type:"checklist_updated",description:`Checklist step ${i+1} ${cl[i]?"completed":"unchecked"}`});};
-  const addHyp=()=>{if(!newH.title.trim())return;const h={id:uid(),createdAt:new Date(),status:"active",...newH};onUpdate(c.id,{hypotheses:[...(c.hypotheses||[]),h]});addLog(c.id,{type:"hypothesis_added",description:`Hypothesis added: "${h.title}"`});setNewH({title:"",confidence:50,evidence:""});setShowNewH(false);};
-  const setHypStatus=(hid,st)=>{const hs=(c.hypotheses||[]).map(h=>h.id===hid?{...h,status:st}:h);onUpdate(c.id,{hypotheses:hs});addLog(c.id,{type:"updated",description:`Hypothesis ${st}`});};
+  const addLog=(id,e)=>onUpdate(id,{activityLog:[...c.activityLog,{id:uid(),timestamp:Date.now(),message:e.message||e.description,...e}]});
+  const saveFindings=()=>{onUpdate(c.id,{findings});addLog(c.id,{type:"updated",message:"Findings updated"});};
+  const toggleCheck=(i)=>{const cl=[...(c.checklist||[])];cl[i]=!cl[i];onUpdate(c.id,{checklist:cl});addLog(c.id,{type:"checklist_updated",message:`Checklist step ${i+1} ${cl[i]?"completed":"unchecked"}`});};
+  const addHyp=()=>{if(!newH.title.trim())return;const h={id:uid(),createdAt:Date.now(),status:"active",...newH};onUpdate(c.id,{hypotheses:[...(c.hypotheses||[]),h]});addLog(c.id,{type:"hypothesis_added",message:`Hypothesis added: "${h.title}"`});setNewH({title:"",confidence:50,evidence:""});setShowNewH(false);};
+  const setHypStatus=(hid,st)=>{const hs=(c.hypotheses||[]).map(h=>h.id===hid?{...h,status:st}:h);onUpdate(c.id,{hypotheses:hs});addLog(c.id,{type:"updated",message:`Hypothesis ${st}`});};
 
   return (
     <div style={{height:"100%",background:"#0A0A0A", overflowY: "auto"}}>
@@ -608,7 +608,7 @@ const Detail = ({c,all,onBack,onEdit,onUpdate}: any) => {
             : [...c.activityLog].reverse().map(e=>(
               <div key={e.id} style={{display:"flex",gap:12,padding:"12px 0",borderBottom:"1px solid #1A1A1A"}}>
                 <div style={{fontSize:14,color:"#505050",minWidth:20,marginTop:1}}>{ACT_ICONS[e.type]||"·"}</div>
-                <div style={{flex:1}}><div style={{fontSize:12,color:"#A0A0A0",lineHeight:1.5}}>{e.description}</div><div style={{fontSize:10,color:"#404040",fontFamily:"'Courier New',monospace",marginTop:3}}>{e.user&&<span style={{color:"#505050",marginRight:8}}>{e.user}</span>}{fmtDate(e.timestamp)} · {relTime(e.timestamp)}</div></div>
+                <div style={{flex:1}}><div style={{fontSize:12,color:"#A0A0A0",lineHeight:1.5}}>{e.message}</div><div style={{fontSize:10,color:"#404040",fontFamily:"'Courier New',monospace",marginTop:3}}>{e.user&&<span style={{color:"#505050",marginRight:8}}>{e.user}</span>}{fmtDate(e.timestamp)} · {relTime(e.timestamp)}</div></div>
               </div>
             ))}
           </div>
@@ -688,20 +688,20 @@ export default function AbsterDashboard({ onClose }: { onClose?: () => void }) {
     if (!c) return;
     updateCase(id, {
       updatedAt: new Date().toISOString(),
-      activityLog: [...c.activityLog, {id:uid(),timestamp:new Date().toISOString(),...e}]
+      activityLog: [...c.activityLog, {id:uid(),timestamp:Date.now(),message:e.message||e.description,...e}]
     });
   };
 
   const handleCreate=(data)=>{
-    const nc={id:uid(),codeName:cname(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),status:"active",findings:"",linkedCases:data.linkedCases||[],template:tpl?.id||null,checklist:tpl?tpl.checklist.map(()=>false):[],hypotheses:[],activityLog:[{id:uid(),timestamp:new Date().toISOString(),type:"created",description:`Case created${tpl?` from ${tpl.label} template`:""}`,user:data.leadInvestigator||"Analyst"}],stats:{entityCount:0,locationCount:0,eventCount:0,toolResultsCount:0,evidenceCount:0},settings:{autoSave:true,notifications:true,shareWithTeam:false},team:data.leadInvestigator?[data.leadInvestigator]:[],...data};
+    const nc={id:uid(),codeName:cname(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),status:"active",findings:"",linkedCases:data.linkedCases||[],template:tpl?.id||null,checklist:tpl?tpl.checklist.map(()=>false):[],hypotheses:[],activityLog:[{id:uid(),timestamp:Date.now(),type:"created",message:`Case created${tpl?` from ${tpl.label} template`:""}`,user:data.leadInvestigator||"Analyst"}],stats:{entityCount:0,locationCount:0,eventCount:0,toolResultsCount:0,evidenceCount:0},settings:{autoSave:true,notifications:true,shareWithTeam:false},team:data.leadInvestigator?[data.leadInvestigator]:[],...data};
     addCase(nc);setModal(null);setTpl(null);showToast(`Case created: ${nc.codeName}`);
   };
 
-  const handleEdit=(data)=>{if(!editCase) return; upd(editCase.id,data);log(editCase.id,{type:"updated",description:"Case metadata updated"});setEditCase(null);showToast("Case updated");};
-  const handleDup=(id)=>{const o=cases.find(c=>c.id===id);if(!o)return;const d={...o,id:uid(),codeName:cname(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),status:"active",title:o.title+" (Copy)",activityLog:[{id:uid(),timestamp:new Date().toISOString(),type:"created",description:`Duplicated from ${o.codeName}`}],hypotheses:[],checklist:(o.checklist||[]).map(()=>false)};addCase(d);showToast(`Duplicated as ${d.codeName}`);};
-  const handleArchive=(id)=>{upd(id,{status:"archived"});log(id,{type:"status_changed",description:"Case archived"});showToast("Case archived");};
-  const handleClose=(id)=>{upd(id,{status:"closed",closedAt:new Date().toISOString()});log(id,{type:"status_changed",description:"Case closed"});showToast("Case closed");};
-  const handleReopen=(id)=>{upd(id,{status:"active",closedAt:undefined});log(id,{type:"status_changed",description:"Case reopened"});showToast("Case reopened");};
+  const handleEdit=(data)=>{if(!editCase) return; upd(editCase.id,data);log(editCase.id,{type:"updated",message:"Case metadata updated"});setEditCase(null);showToast("Case updated");};
+  const handleDup=(id)=>{const o=cases.find(c=>c.id===id);if(!o)return;const d={...o,id:uid(),codeName:cname(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),status:"active",title:o.title+" (Copy)",activityLog:[{id:uid(),timestamp:Date.now(),type:"created",message:`Duplicated from ${o.codeName}`}],hypotheses:[],checklist:(o.checklist||[]).map(()=>false)};addCase(d);showToast(`Duplicated as ${d.codeName}`);};
+  const handleArchive=(id)=>{upd(id,{status:"archived"});log(id,{type:"status_changed",message:"Case archived"});showToast("Case archived");};
+  const handleClose=(id)=>{upd(id,{status:"closed",closedAt:new Date().toISOString()});log(id,{type:"status_changed",message:"Case closed"});showToast("Case closed");};
+  const handleReopen=(id)=>{upd(id,{status:"active",closedAt:undefined});log(id,{type:"status_changed",message:"Case reopened"});showToast("Case reopened");};
   const handleDel=(id)=>setConfirm({msg:"Permanently delete this case? All data will be lost.",onOk:()=>{removeCase(id);setConfirm(null);showToast("Case deleted");}});
 
   const togSel=(id: string)=>setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
@@ -783,7 +783,7 @@ export default function AbsterDashboard({ onClose }: { onClose?: () => void }) {
               {recentAct.map(a=>(
                 <div key={a.id} onClick={()=>setActiveCase(a.caseId)} style={{display:"flex",gap:10,padding:"6px 0",borderBottom:"1px solid #0F0F0F",cursor:"pointer"}}>
                   <span style={{color:"#505050",fontSize:12,minWidth:16,marginTop:1}}>{ACT_ICONS[a.type]||"·"}</span>
-                  <div style={{flex:1,overflow:"hidden"}}><span style={{fontSize:10,color:"#DC2626",fontFamily:"'Courier New',monospace",marginRight:8}}>{a.caseName}</span><span style={{fontSize:11,color:"#A0A0A0"}}>{a.description}</span></div>
+                  <div style={{flex:1,overflow:"hidden"}}><span style={{fontSize:10,color:"#DC2626",fontFamily:"'Courier New',monospace",marginRight:8}}>{a.caseName}</span><span style={{fontSize:11,color:"#A0A0A0"}}>{a.message}</span></div>
                   <span style={{fontSize:9,color:"#404040",fontFamily:"'Courier New',monospace",whiteSpace:"nowrap"}}>{relTime(a.timestamp)}</span>
                 </div>
               ))}

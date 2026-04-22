@@ -1,6 +1,12 @@
 import { Dispatch, SetStateAction, RefObject } from 'react';
 import { Chat, Case } from '../../store/absterStore';
 
+export interface ContextMenuState {
+  chatId: string;
+  x: number;
+  y: number;
+}
+
 export interface ChatSidebarProps {
   sidebarOpen: boolean;
   sidebarSearch: string;
@@ -17,7 +23,7 @@ export interface ChatSidebarProps {
   mounted: boolean;
   formatTime: (ts: string) => string;
   cases: Case[];
-  setContextMenu: Dispatch<SetStateAction<any>>;
+  setContextMenu: Dispatch<SetStateAction<ContextMenuState | null>>;
   setNewChatModal: Dispatch<SetStateAction<boolean>>;
   chats: Chat[];
 }
@@ -54,7 +60,7 @@ export function ChatSidebar({
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "0 8px" }}>
           {filteredChats.length === 0 && <div style={{ padding: 16, color: "#444", fontSize: 11, textAlign: "center" }}>No investigations</div>}
-          {filteredChats.map((chat: any) => (
+          {filteredChats.map((chat: Chat) => (
             <div key={chat.id} onClick={() => setActiveChatId(chat.id)}
               style={{ padding: "8px 10px", borderRadius: 6, marginBottom: 2, cursor: "pointer", background: activeChatId === chat.id ? "#111" : "transparent", borderLeft: activeChatId === chat.id ? "2px solid #fff" : "2px solid transparent", transition: "all 0.1s", position: "relative" }}>
               {renaming === chat.id ? (
@@ -68,7 +74,7 @@ export function ChatSidebar({
                   <div style={{ fontSize: 11, color: "#fff", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 2 }}>{chat.title}</div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <span style={{ fontSize: 9, color: "#444" }}>{mounted ? formatTime(chat.updatedAt) : "--"}</span>
-                    {chat.caseId && <span style={{ fontSize: 8, color: "#525252", background: "#111", padding: "1px 4px", borderRadius: 3 }}>{cases.find((c: any) => c.id === chat.caseId)?.codeName || chat.caseId}</span>}
+                    {chat.caseId && <span style={{ fontSize: 8, color: "#525252", background: "#111", padding: "1px 4px", borderRadius: 3 }}>{cases.find((c: Case) => c.id === chat.caseId)?.codeName || chat.caseId}</span>}
                   </div>
                 </>
               )}

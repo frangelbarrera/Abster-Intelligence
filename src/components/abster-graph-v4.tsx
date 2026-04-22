@@ -9,32 +9,58 @@ import { ExternalLink, X, Search, Info, Shield, Zap } from 'lucide-react';
 // ============================================================
 // CONSTANTS
 // ============================================================
-const NODE_COLORS = {
+export interface GraphNode {
+  id: string;
+  type: string;
+  label: string;
+  x: number;
+  y: number;
+  properties?: Record<string, any>;
+  confidence: number;
+  source: string;
+  isVerified: boolean;
+  isSuspicious: boolean;
+  notes?: string;
+  avatar?: string | null;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  label: string;
+  strength: number;
+  notes?: string;
+  date?: string;
+}
+
+const NODE_COLORS: Record<string, string> = {
   person:"#3B82F6", company:"#10B981", email:"#F59E0B", phone:"#EF4444",
   location:"#8B5CF6", domain:"#6B7280", document:"#FFFFFF", vehicle:"#F97316",
   crypto:"#84CC16", event: "#EC4899", generic:"#9CA3AF",
 };
-const NODE_ICONS = {
+const NODE_ICONS: Record<string, string> = {
   person:"👤", company:"🏢", email:"✉️", phone:"📱", location:"📍",
   domain:"🌐", document:"📄", vehicle:"🚗", crypto:"₿", event: "📅", generic:"◆",
 };
-const EDGE_LABELS = {
+const EDGE_LABELS: Record<string, string> = {
   knows:"KNOWS", works_at:"WORKS AT", family_of:"FAMILY OF", owns:"OWNS",
   communicates_with:"COMM.", located_at:"LOCATED AT", registered_to:"REG. TO",
   transaction_with:"TRANSACTION", related_to:"RELATED", custom:"CUSTOM",
 };
-const RISK_COLORS = { high:"#EF4444", medium:"#F59E0B", low:"#10B981", unknown:"#505050" };
+const RISK_COLORS: Record<string, string> = { high:"#EF4444", medium:"#F59E0B", low:"#10B981", unknown:"#505050" };
 const CLUSTER_COLORS = ["#3B82F6","#10B981","#F59E0B","#8B5CF6","#EF4444","#F97316","#84CC16","#06B6D4"];
 
 // PHASE 5 — favicon cache for domain nodes
-const FAVICON_CACHE = {};
+const FAVICON_CACHE: Record<string, string> = {};
 function getFavicon(label: string) {
   if(!label) return null;
   const domain = label.includes("@") ? label.split("@")[1] : label;
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 }
 
-const INITIAL_NODES = [
+const INITIAL_NODES: GraphNode[] = [
   { id:"1", type:"person",   label:"Viktor Kozlov",          x:400,y:300, properties:{nationality:"Russian",age:"42"},                   confidence:0.9,  source:"manual",       isVerified:false, isSuspicious:true,  notes:"Primary subject. Financial crimes investigation.", avatar:null },
   { id:"2", type:"company",  label:"Novatech Solutions",     x:650,y:200, properties:{industry:"IT Consulting",registration:"CY123456"},  confidence:0.85, source:"ai_extraction",isVerified:false, isSuspicious:false, notes:"", avatar:null },
   { id:"3", type:"email",    label:"vkozlov@protonmail.com", x:200,y:200, properties:{domain:"protonmail.com"},                           confidence:0.95, source:"manual",       isVerified:true,  isSuspicious:false, notes:"", avatar:null },
@@ -44,7 +70,7 @@ const INITIAL_NODES = [
   { id:"7", type:"company",  label:"Amber Holdings",         x:80, y:480, properties:{industry:"Real Estate"},                           confidence:0.6,  source:"ai_extraction",isVerified:false, isSuspicious:false, notes:"", avatar:null },
   { id:"8", type:"domain",   label:"novatech-cy.com",        x:750,y:350, properties:{registrar:"Namecheap"},                            confidence:0.9,  source:"enrichment",   isVerified:false, isSuspicious:false, notes:"", avatar:null },
 ];
-const INITIAL_EDGES = [
+const INITIAL_EDGES: GraphEdge[] = [
   { id:"e1", source:"1", target:"2", type:"works_at",      label:"CEO",          strength:10, notes:"Confirmed via company register.", date:"2019-03-15" },
   { id:"e2", source:"1", target:"3", type:"owns",          label:"personal",     strength:10, notes:"",                                date:"2018-07-01" },
   { id:"e3", source:"1", target:"4", type:"located_at",    label:"residence",    strength:8,  notes:"",                                date:"2020-01-10" },
@@ -59,8 +85,8 @@ const INITIAL_EDGES = [
 // ============================================================
 // UTILITIES
 // ============================================================
-function generateId() { return Math.random().toString(36).substr(2,9); }
-function getNodeRadius(nodeId: string, edges: any[]) {
+function generateId() { return Math.random().toString(36).substring(2,11); }
+function getNodeRadius(nodeId: string, edges: GraphEdge[]) {
   const c = edges.filter(e=>e.source===nodeId||e.target===nodeId).length;
   return Math.max(28, Math.min(90, 24+c*6));
 }
@@ -71,8 +97,8 @@ function formatDate(ts: number) { return new Date(ts).toISOString().split("T")[0
 // ============================================================
 // ANALYSIS
 // ============================================================
-function computeCentrality(nodes: any[], edges: any[]) {
-  const degree: any={}, betweenness: any={};
+function computeCentrality(nodes: GraphNode[], edges: GraphEdge[]) {
+  const degree: Record<string, number> = {}, betweenness: Record<string, number> = {};
   nodes.forEach(n=>{degree[n.id]=0;betweenness[n.id]=0;});
   edges.forEach(e=>{degree[e.source]=(degree[e.source]||0)+1;degree[e.target]=(degree[e.target]||0)+1;});
   const maxDeg=Math.max(1,...Object.values(degree).map(v => typeof v === 'number' ? v : 0));
@@ -82,31 +108,31 @@ function computeCentrality(nodes: any[], edges: any[]) {
       if(!edges.some(e=>(e.source===nb[i]&&e.target===nb[j])||(e.source===nb[j]&&e.target===nb[i]))) betweenness[n.id]++;
   });
   const maxBet=Math.max(1,...Object.values(betweenness).map(v => typeof v === 'number' ? v : 0));
-  const result: any={};
+  const result: Record<string, { degree: number; degreeNorm: number; betweenness: number; betweennessNorm: number; score: number }> = {};
   nodes.forEach(n=>{result[n.id]={degree:degree[n.id]||0,degreeNorm:(degree[n.id]||0)/maxDeg,betweenness:betweenness[n.id]||0,betweennessNorm:(betweenness[n.id]||0)/maxBet,score:((degree[n.id]||0)/maxDeg)*0.5+((betweenness[n.id]||0)/maxBet)*0.5};});
   return result;
 }
-function detectCommunities(nodes: any[], edges: any[]) {
-  const label: any={};
+function detectCommunities(nodes: GraphNode[], edges: GraphEdge[]) {
+  const label: Record<string, string> = {};
   nodes.forEach(n=>{label[n.id]=n.id;});
   for(let i=0;i<20;i++){
     let changed=false;
     nodes.forEach(n=>{
       const nb=edges.filter(e=>e.source===n.id||e.target===n.id).map(e=>e.source===n.id?e.target:e.source);
       if(!nb.length) return;
-      const freq: any={};
+      const freq: Record<string, number> = {};
       nb.forEach(x=>{freq[label[x]]=(freq[label[x]]||0)+1;});
-      const best=Object.entries(freq).sort((a: any,b: any)=>b[1]-a[1])[0][0];
+      const best=Object.entries(freq).sort((a: [string, number], b: [string, number])=>b[1]-a[1])[0][0];
       if(best!==label[n.id]){label[n.id]=best;changed=true;}
     });
     if(!changed) break;
   }
-  const ul=[...new Set(Object.values(label) as string[])];
-  const cm: any={};
+  const ul=[...new Set(Object.values(label))];
+  const cm: Record<string, number> = {};
   nodes.forEach(n=>{cm[n.id]=ul.indexOf(label[n.id]);});
   return cm;
 }
-function findShortestPath(startId: string, endId: string, edges: any[]) {
+function findShortestPath(startId: string, endId: string, edges: GraphEdge[]) {
   if(startId===endId) return [startId];
   const q: string[][]=[[startId]], vis=new Set([startId]);
   while(q.length){
@@ -116,7 +142,7 @@ function findShortestPath(startId: string, endId: string, edges: any[]) {
   }
   return null;
 }
-function computeRiskScore(node: any, edges: any[], centrality: any) {
+function computeRiskScore(node: GraphNode, edges: GraphEdge[], centrality: Record<string, { score: number }>) {
   let s=0;
   if(node.isSuspicious) s+=40; if(!node.isVerified) s+=10;
   if(node.confidence<0.7) s+=15; if(node.source==="ai_extraction") s+=5;
@@ -124,7 +150,7 @@ function computeRiskScore(node: any, edges: any[], centrality: any) {
   if(edges.filter(e=>e.source===node.id||e.target===node.id).length>4) s+=10;
   if(s>=50) return "high"; if(s>=25) return "medium"; if(s>0) return "low"; return "unknown";
 }
-function generateInsights(nodes: any[], edges: any[], centrality: any, communities: any) {
+function generateInsights(nodes: GraphNode[], edges: GraphEdge[], centrality: Record<string, { degree: number; betweenness: number }>, communities: Record<string, number>) {
   const ins: any[]=[];
   if(!nodes.length) return ins;
   const topNode=nodes.reduce((a,b)=>(centrality[a.id]?.degree||0)>=(centrality[b.id]?.degree||0)?a:b,nodes[0]);
@@ -142,9 +168,9 @@ function generateInsights(nodes: any[], edges: any[], centrality: any, communiti
     const s=nodes.find(n=>n.id===e.source),t=nodes.find(n=>n.id===e.target);
     if(s?.isSuspicious||t?.isSuspicious) ins.push({type:"danger",icon:"🔴",title:"Critical Link",text:`Max-strength link: ${s?.label} → ${t?.label} ("${e.label}")`});
   });
-  const natGroups: any={};
-  nodes.filter(n=>n.properties?.nationality).forEach(n=>{const nat=n.properties.nationality;natGroups[nat]=(natGroups[nat]||[]).concat(n.label);});
-  Object.entries(natGroups).filter(([,v]: any)=>v.length>=2).forEach(([nat,names]: any)=>ins.push({type:"info",icon:"🌍",title:"Nationality Cluster",text:`${names.length} entities share ${nat} nationality: ${names.join(", ")}.`}));
+  const natGroups: Record<string, string[]> = {};
+  nodes.filter(n=>n.properties?.nationality).forEach(n=>{const nat=n.properties!.nationality;natGroups[nat]=(natGroups[nat]||[]).concat(n.label);});
+  Object.entries(natGroups).filter(([,v])=>v.length>=2).forEach(([nat,names])=>ins.push({type:"info",icon:"🌍",title:"Nationality Cluster",text:`${names.length} entities share ${nat} nationality: ${names.join(", ")}.`}));
   return ins;
 }
 const OSINT_SUGGESTIONS: any = {
@@ -161,11 +187,11 @@ const OSINT_SUGGESTIONS: any = {
 // ============================================================
 // LAYOUTS
 // ============================================================
-function applyForceLayout(nodes: any[], edges: any[]) {
-  const pos: any={};
+function applyForceLayout(nodes: GraphNode[], edges: GraphEdge[]) {
+  const pos: Record<string, { x: number; y: number }> = {};
   nodes.forEach(n=>{pos[n.id]={x:n.x,y:n.y};});
   for(let iter=0;iter<120;iter++){
-    const f: any={};nodes.forEach(n=>{f[n.id]={x:0,y:0};});
+    const f: Record<string, { x: number; y: number }> = {};nodes.forEach(n=>{f[n.id]={x:0,y:0};});
     for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++){
       const a=pos[nodes[i].id],b=pos[nodes[j].id];
       const dx=b.x-a.x,dy=b.y-a.y,dist=Math.max(Math.sqrt(dx*dx+dy*dy),1),force=9000/(dist*dist);
@@ -183,23 +209,23 @@ function applyForceLayout(nodes: any[], edges: any[]) {
   }
   return nodes.map(n=>({...n,x:pos[n.id].x,y:pos[n.id].y}));
 }
-function applyHierarchicalLayout(nodes: any[], edges: any[]) {
-  const levels: any={},visited=new Set(),adj: any={};
+function applyHierarchicalLayout(nodes: GraphNode[], edges: GraphEdge[]) {
+  const levels: Record<number, string[]> = {}, visited = new Set<string>(), adj: Record<string, string[]> = {};
   nodes.forEach(n=>{adj[n.id]=[];});edges.forEach(e=>{adj[e.source]?.push(e.target);});
   const bfs=(id: string,lv: number)=>{if(visited.has(id)) return;visited.add(id);if(!levels[lv]) levels[lv]=[];levels[lv].push(id);(adj[id]||[]).forEach((t: string)=>bfs(t,lv+1));};
   if(nodes[0]) bfs(nodes[0].id,0);
   nodes.filter(n=>!visited.has(n.id)).forEach(n=>bfs(n.id,0));
-  const la=Object.keys(levels).sort((a: any,b: any)=>+a-+b);
+  const la=Object.keys(levels).map(Number).sort((a,b)=>a-b);
   return nodes.map(n=>{const lv=la.findIndex(l=>levels[l].includes(n.id));const idx=levels[la[lv]]?.indexOf(n.id)??0;const tot=levels[la[lv]]?.length??1;return{...n,x:100+idx*(800/Math.max(tot,1)),y:80+lv*160};});
 }
-function applyCircularLayout(nodes: any[]) {
+function applyCircularLayout(nodes: GraphNode[]) {
   const cx=450,cy=320,r=Math.min(280,60+nodes.length*22);
   return nodes.map((n,i)=>{const a=(i/nodes.length)*2*Math.PI-Math.PI/2;return{...n,x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};});
 }
-function applyTargetCentricLayout(nodes: any[], edges: any[], targetId: string) {
+function applyTargetCentricLayout(nodes: GraphNode[], edges: GraphEdge[], targetId: string) {
   if (!targetId) return applyCircularLayout(nodes);
   const cx = 450, cy = 320;
-  const distances: any = { [targetId]: 0 };
+  const distances: Record<string, number> = { [targetId]: 0 };
   const queue = [targetId];
   while(queue.length > 0) {
     const curr = queue.shift()!;
@@ -209,7 +235,7 @@ function applyTargetCentricLayout(nodes: any[], edges: any[], targetId: string) 
       if (e.target === curr && distances[e.source] === undefined) { distances[e.source] = d + 1; queue.push(e.source); }
     });
   }
-  const rings: any = {};
+  const rings: Record<number, GraphNode[]> = {};
   nodes.forEach(n => {
     const d = distances[n.id] === undefined ? -1 : distances[n.id];
     if (!rings[d]) rings[d] = [];
@@ -219,16 +245,16 @@ function applyTargetCentricLayout(nodes: any[], edges: any[], targetId: string) 
     const d = distances[n.id];
     if (d === 0) return { ...n, x: cx, y: cy };
     if (d === undefined || d === -1) {
-      const ringNodes = rings[-1]; const i = ringNodes.findIndex((x: any) => x.id === n.id);
+      const ringNodes = rings[-1]; const i = ringNodes.findIndex((x) => x.id === n.id);
       const r = 400; const a = (i / ringNodes.length) * 2 * Math.PI;
       return { ...n, x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
     }
-    const ringNodes = rings[d]; const i = ringNodes.findIndex((x: any) => x.id === n.id);
+    const ringNodes = rings[d]; const i = ringNodes.findIndex((x) => x.id === n.id);
     const r = d * 140; const a = (i / ringNodes.length) * 2 * Math.PI;
     return { ...n, x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
   });
 }
-function applyGridLayout(nodes: any[]) {
+function applyGridLayout(nodes: GraphNode[]) {
   const cols=Math.ceil(Math.sqrt(nodes.length));
   return nodes.map((n,i)=>({...n,x:120+(i%cols)*160,y:100+Math.floor(i/cols)*160}));
 }
