@@ -9,7 +9,7 @@ Abster Intelligence is an active project focused on private data analysis. To en
 
 ![Abster Intelligence Graph Engine](public/images/1.png)
 
-Abster Intelligence is a professional-grade, privacy-centric open-source OSINT & data visualization platform. Built for analysts, cybersecurity researchers, and red teams, it combines multi-LLM capabilities with a powerful relational graph engine to map, analyze, and investigate complex data networks.
+Abster Intelligence is a privacy-centric, open-source OSINT & data visualization platform. Built for analysts, cybersecurity researchers, and red teams, it combines multi-LLM capabilities with a dynamic relational graph engine to map, analyze, and investigate complex data networks.
 
 ## Core Features
 
