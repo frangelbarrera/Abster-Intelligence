@@ -1,15 +1,25 @@
 # Abster Intelligence
 
-> Information wants to be free, but intelligence must remain private.
-
-
-Abster Intelligence is an active project focused on private data analysis. To ensure the highest standards of security and analytical precision, we encourage peer review and community contributions. If you identify vulnerabilities, architectural flaws, or potential improvements, please submit a detailed Pull Request. Help us harden this suite for the OSINT community.
-
-> **OSINT Suite & Relational Data Visualization Engine**
+> Information wants to be free, but intelligence must remain private. 
+> **Local-first OSINT workspace for investigators who can’t afford data leakage.**
 
 ![Abster Intelligence Graph Engine](public/images/1.png)
 
-Abster Intelligence is a privacy-centric, open-source OSINT & data visualization platform. Built for analysts, cybersecurity researchers, and red teams, it combines multi-LLM capabilities with a dynamic relational graph engine to map, analyze, and investigate complex data networks.
+Abster Intelligence is a privacy-first investigation workspace for OSINT, GEOINT, and cyber research. Map entities in a live relationship graph, build timelines, analyze evidence, and query your case with your own LLM keys—without sending your investigations to a central database.
+
+**Why it stands out:**
+- **Local-first by default:** Cases, notes, evidence metadata, and provider settings stay in your browser via IndexedDB.
+- **Zero-trust platform model:** Bring your own keys (BYOK). Your keys are not stored by us, and investigation data stays local unless you explicitly query a third-party provider.
+- **Graph-native investigations:** Turn fragmented findings into connected entities, locations, and timelines using a dynamic D3.js engine.
+
+---
+
+## Security Model
+
+Abster Intelligence operates under a strict data sovereignty paradigm:
+* No Abster-hosted central case database is required or exists.
+* Provider keys are configured directly by the user in the UI.
+* The platform does not act as a mandatory data relay. When you use an external AI provider, your prompts go directly to them.
 
 ## Core Features
 
