@@ -1,5 +1,10 @@
 # Abster Intelligence
 
+![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
 > Information wants to be free, but intelligence must remain private. 
 > **Local-first OSINT workspace for investigators who can’t afford data leakage.**
 
