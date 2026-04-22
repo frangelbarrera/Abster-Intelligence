@@ -2,20 +2,18 @@
 
 > Information wants to be free, but intelligence must remain private.
 
---
 
-Abster Intelligence is an active project focused on data sovereignty. To ensure the highest standards of security and analytical precision, we encourage peer review and community contributions. If you identify vulnerabilities, architectural flaws, or potential improvements, please submit a detailed Pull Request. Help us harden this suite for the OSINT community.
+Abster Intelligence is an active project focused on private data analysis. To ensure the highest standards of security and analytical precision, we encourage peer review and community contributions. If you identify vulnerabilities, architectural flaws, or potential improvements, please submit a detailed Pull Request. Help us harden this suite for the OSINT community.
 
---
 > **OSINT Suite & Relational Data Visualization Engine**
 
 ![Abster Intelligence Graph Engine](public/images/1.png)
 
-Abster Intelligence is a professional-grade, privacy-centric open-source intelligence (OSINT) platform. Built for analysts, cybersecurity researchers, and red teams, it combines multi-LLM capabilities with a powerful relational graph engine to map, analyze, and investigate complex data networks.
+Abster Intelligence is a professional-grade, privacy-centric open-source OSINT & data visualization platform. Built for analysts, cybersecurity researchers, and red teams, it combines multi-LLM capabilities with a powerful relational graph engine to map, analyze, and investigate complex data networks.
 
 ## Core Features
 
-![Intelligence Dashboard](public/images/6.png)
+![OSINT Operations Dashboard](public/images/6.png)
 
 * **Local-First Architecture:** Complete data sovereignty. All case work, chat history, and infrastructure evidence are stored safely in your browser using IndexedDB (Dexie.js). No middleman databases, no telemetry.
 
@@ -25,11 +23,11 @@ Abster Intelligence is a professional-grade, privacy-centric open-source intelli
 
 ![Tactical GEOINT Map](public/images/3.png)
 
-* **Multi-LLM Integration:** Query your intelligence data using multiple providers (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama) simultaneously.
+* **Multi-LLM Integration:** Query your OSINT findings using multiple providers (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama) simultaneously.
 
 ![Multi-LLM Chat Interface](public/images/2.png)
 
-* **Automated Threat Timelines:** Auto-generation of events from intelligence reports to track operations chronologically.
+* **Automated Threat Timelines:** Auto-generation of events from investigative reports to track operations chronologically.
 
 ![Threat Timeline](public/images/4.png)
 
@@ -57,7 +55,7 @@ Abster Intelligence is a professional-grade, privacy-centric open-source intelli
 
 ## Quick Start
 
-Get the intelligence dashboard up and running locally in seconds:
+Get the OSINT dashboard up and running locally in seconds:
 
 ```bash
 # Clone the repository
