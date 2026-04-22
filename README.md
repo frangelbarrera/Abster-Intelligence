@@ -53,6 +53,28 @@ Abster Intelligence is a professional-grade, privacy-centric open-source OSINT &
 * **Database:** Dexie.js (IndexedDB wrapper)
 * **Visualization:** D3.js
 
+## Project Structure
+
+Here is a high-level overview of the Abster Intelligence codebase architecture. The project follows a modular, feature-based approach within the Next.js App Router paradigm.
+
+```text
+abster-intelligence/
+├── public/                 # Static assets and public resources
+├── src/
+│   ├── app/                # Next.js 15 App Router (Pages, Layouts, APIs)
+│   ├── components/         # Core React Components
+│   │   ├── chat/           # Modular Chat UI (ChatInput, ChatSidebar, ChatMessageList)
+│   │   ├── ui/             # Reusable UI / Shadcn Elements
+│   │   ├── abster-graph-v4.tsx # D3.js Relational Graph Engine
+│   │   ├── abster-chat.tsx # Main Chat Orchestrator (Zustand/Dexie integration)
+│   │   └── GeoIntMap.tsx   # Geospatial Intelligence Map Engine
+│   ├── lib/                # Utilities (DOMPurify Security, Markdown parsing, Tools)
+│   ├── store/              # Zustand global state definitions
+│   └── data/               # Dexie.js (IndexedDB) Schema and DB connections
+├── package.json            # Project dependencies and operational scripts
+├── tailwind.config.ts      # Tailwind CSS configuration and theme
+└── next.config.ts          # Next.js compiler and build configuration
+```
 ## Quick Start
 
 Get the OSINT dashboard up and running locally in seconds:
