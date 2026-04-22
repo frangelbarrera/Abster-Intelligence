@@ -103,3 +103,8 @@ git clone [https://github.com/frangelbarrera/Abster-Intelligence.git](https://gi
 cd Abster-Intelligence
 npm install
 npm run dev
+```
+Open `http://localhost:3000` in your browser.
+
+**Configuration Note:**
+Abster Intelligence works out-of-the-box for case management and graphing. To enable multi-LLM queries, you must configure your provider API keys (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama) directly within the application's Settings UI. No `.env` setup is required for core functionality.
