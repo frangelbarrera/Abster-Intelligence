@@ -99,7 +99,7 @@ abster-intelligence/
 
 ### Run Locally
 ```bash
-git clone [https://github.com/frangelbarrera/Abster-Intelligence.git](https://github.com/frangelbarrera/Abster-Intelligence.git)
+git clone https://github.com/frangelbarrera/Abster-Intelligence.git(https://github.com/frangelbarrera/Abster-Intelligence.git)
 cd Abster-Intelligence
 npm install
 npm run dev
