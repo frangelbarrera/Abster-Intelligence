@@ -92,15 +92,14 @@ abster-intelligence/
 ```
 ## Quick Start
 
-Get the OSINT dashboard up and running locally in seconds:
+### Prerequisites
+- Node.js 20+
+- npm 10+
+- A modern Chromium-based browser or Firefox
 
+### Run Locally
 ```bash
-# Clone the repository
 git clone [https://github.com/frangelbarrera/Abster-Intelligence.git](https://github.com/frangelbarrera/Abster-Intelligence.git)
 cd Abster-Intelligence
-
-# Install dependencies
 npm install
-
-# Start the development server
 npm run dev
