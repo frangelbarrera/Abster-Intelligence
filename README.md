@@ -1,5 +1,8 @@
 # Abster Intelligence
 Information wants to be free, but intelligence must remain private.
+--
+
+Abster Intelligence is an active project focused on data sovereignty. To ensure the highest standards of security and analytical precision, we encourage peer review and community contributions. If you identify vulnerabilities, architectural flaws, or potential improvements, please submit a detailed Pull Request. Help us harden this suite for the OSINT community.
 
 > **OSINT Suite & Relational Data Visualization Engine**
 
