@@ -1,4 +1,5 @@
 # Abster Intelligence
+Information wants to be free, but intelligence must remain private.
 
 > **Advanced OSINT Suite & Relational Data Visualization Engine**
 
