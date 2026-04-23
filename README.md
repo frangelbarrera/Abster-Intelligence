@@ -99,7 +99,7 @@ abster-intelligence/
 
 ### Run Locally
 ```bash
-git clone https://github.com/frangelbarrera/Abster-Intelligence.git(https://github.com/frangelbarrera/Abster-Intelligence.git)
+git clone https://github.com/frangelbarrera/Abster-Intelligence.git
 cd Abster-Intelligence
 npm install
 npm run dev
@@ -108,3 +108,26 @@ Open `http://localhost:3000` in your browser.
 
 **Configuration Note:**
 Abster Intelligence works out-of-the-box for case management and graphing. To enable multi-LLM queries, you must configure your provider API keys (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama) directly within the application's Settings UI. No `.env` setup is required for core functionality.
+
+---
+
+## 🤝 Contributing
+
+Abster Intelligence is an open-source project and **contributions are welcome**. Whether it's a bug fix, a new provider integration, or a UI enhancement:
+
+1. **Open an Issue:** Describe the feature or bug.
+2. **Fork and Branch:** Create a branch for your fix.
+3. **Submit a PR:** Ensure your code follows the strict typing rules (no `any`).
+
+Please check our [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more details.
+
+## 🛡️ Security Policy
+
+As a tool built for investigators, we take security and privacy seriously. 
+
+* **Reporting Vulnerabilities:** If you discover a security vulnerability within Abster Intelligence, please **do not open a public issue**. Instead, report it via the Security tab or contact the maintainers directly.
+* **Data Privacy:** Abster Intelligence does not collect telemetry. Your investigative data remains yours.
+
+## 📜 License
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** - see the [LICENSE](LICENSE) file for details.
