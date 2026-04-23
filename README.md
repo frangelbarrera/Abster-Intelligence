@@ -119,8 +119,6 @@ Abster Intelligence is an open-source project and **contributions are welcome**.
 2. **Fork and Branch:** Create a branch for your fix.
 3. **Submit a PR:** Ensure your code follows the strict typing rules (no `any`).
 
-Please check our [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more details.
-
 ## 🛡️ Security Policy
 
 As a tool built for investigators, we take security and privacy seriously. 
