@@ -200,7 +200,7 @@ export default function AbsterIntelligence() {
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 9, color: "#444" }}>STATUS: <span style={{ color: activeCase ? "#10B981" : "#EF4444" }}>{activeCase ? "ACTIVE" : "STANDBY"}</span></div>
-          <div style={{ fontSize: 9, color: "#444" }}>ENCRYPTION: <span style={{ color: "#70C8FF" }}>AES-256-GCM</span></div>
+          <div style={{ fontSize: 9, color: "#444" }}>STORAGE: <span style={{ color: "#70C8FF" }}>Base64 (local only)</span></div>
         </div>
       </div>
 

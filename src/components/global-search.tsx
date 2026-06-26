@@ -430,7 +430,7 @@ END OF PACKET
             <div className="w-2 h-2 bg-[#81ecff] rounded-full"></div>
             <span className="text-[10px] font-headline text-[#adaaaa] uppercase">System_Active</span>
           </div>
-          <span className="text-[10px] font-mono text-[#81ecff]/40 uppercase">Encrypted_Link</span>
+          <span className="text-[10px] font-mono text-[#81ecff]/40 uppercase">Local_Storage</span>
         </div>
       </section>
       </div>

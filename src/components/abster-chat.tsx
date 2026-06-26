@@ -1358,7 +1358,7 @@ function ReportsPanel({ files, onClose, onUpload, onDelete, onExpand }: {
         </button>
         <div className="mt-3 flex items-center justify-center gap-2 text-[9px] text-zinc-600">
           <Shield size={10} />
-          <span>Encrypted local storage (AES-256)</span>
+          <span>Encoded local storage (Base64)</span>
         </div>
       </div>
     </div>

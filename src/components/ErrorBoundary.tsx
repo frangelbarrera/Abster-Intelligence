@@ -49,7 +49,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             
             {errorDetails ? (
               <div className="bg-black/50 p-4 rounded border border-red-900/50 text-sm overflow-auto">
-                <p className="font-bold text-red-300 mb-2">Firestore Permission Error</p>
+                <p className="font-bold text-red-300 mb-2">Application Error — Please refresh the page or clear local data.</p>
                 <p><strong>Operation:</strong> {errorDetails.operationType}</p>
                 <p><strong>Path:</strong> {errorDetails.path}</p>
                 <p><strong>Message:</strong> {errorDetails.error}</p>
