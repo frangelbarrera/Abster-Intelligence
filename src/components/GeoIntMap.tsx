@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Polygon, useMapEvents, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -91,7 +91,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
     { id: 'init', timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }), type: 'system', message: '2D Tactical Map initialized. Memory load optimal.' }
   ]);
 
-  const addFeedEvent = (type: FeedEvent['type'], message: string, location?: { lat?: number, lng?: number, bounds?: L.LatLngBoundsExpression }) => {
+  const addFeedEvent = useCallback((type: FeedEvent['type'], message: string, location?: { lat?: number, lng?: number, bounds?: L.LatLngBoundsExpression }) => {
     setFeedEvents(prev => {
       const newEvent: FeedEvent = {
         id: `${Date.now()}-${generateId()}`,
@@ -102,7 +102,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
       };
       return [newEvent, ...prev].slice(0, 50);
     });
-  };
+  }, []);
 
   // Fetch Earthquakes
   useEffect(() => {
