@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 export default function AbsterReports({ onClose }: { onClose: () => void }) {
-  const { vaultFiles, activeCaseId, removeVaultFile } = useAbsterStore();
+  const { vaultFiles, activeCaseId, removeVaultFile, chats } = useAbsterStore();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'size' | 'type'>('date');
@@ -18,8 +18,9 @@ export default function AbsterReports({ onClose }: { onClose: () => void }) {
   const [textContent, setTextContent] = useState<string | null>(null);
 
   const caseFiles = useMemo(() => {
-    return vaultFiles.filter(f => f.chatId === activeCaseId || true); // Assuming vault files are linked to the case via chat or directly
-  }, [vaultFiles, activeCaseId]);
+    const caseChatIds = new Set(chats.filter(c => c.caseId === activeCaseId).map(c => c.id));
+    return vaultFiles.filter(f => caseChatIds.has(f.chatId));
+  }, [vaultFiles, activeCaseId, chats]);
 
   const filteredAndSortedFiles = useMemo(() => {
     let result = caseFiles.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));

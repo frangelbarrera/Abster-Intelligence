@@ -664,11 +664,11 @@ export default function AbsterDashboard({ onClose }: { onClose?: () => void }) {
       const c = cases.find(c => c.id === activeCaseId);
       if (c) {
         const newStats = {
-          entityCount: entities.length,
-          locationCount: entities.filter(e => e.type === 'LOCATION').length,
-          eventCount: entities.filter(e => e.type === 'EVENT').length,
+          entityCount: entities.filter(e => e.caseId === activeCaseId).length,
+          locationCount: entities.filter(e => e.type === 'LOCATION' && e.caseId === activeCaseId).length,
+          eventCount: entities.filter(e => e.type === 'EVENT' && e.caseId === activeCaseId).length,
           toolResultsCount: c.stats?.toolResultsCount || 0,
-          evidenceCount: relations.length
+          evidenceCount: relations.filter(r => r.caseId === activeCaseId).length
         };
         if (
           c.stats?.entityCount !== newStats.entityCount ||

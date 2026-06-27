@@ -18,7 +18,7 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
         const sessionUser = JSON.parse(savedSession);
         setUser(sessionUser);
         store.setCurrentUser(sessionUser);
-        store.loadInitialData().then(() => setLoading(false));
+        store.loadInitialData().then(() => setLoading(false)).catch((err) => { console.error('loadInitialData failed', err); setLoading(false); });
       } catch {
         localStorage.removeItem('abster_local_session');
         setLoading(false);
