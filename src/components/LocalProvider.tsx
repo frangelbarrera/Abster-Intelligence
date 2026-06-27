@@ -26,7 +26,10 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
     } else {
       setLoading(false);
     }
-  }, [store]);
+    // store from useAbsterStore() is a reactive state snapshot, not a stable reference.
+    // Adding it to deps causes infinite re-renders via loadInitialData → set() → new snapshot → effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = async (email?: string, password?: string) => {
     setLoading(true);
