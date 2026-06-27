@@ -886,12 +886,6 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
 
   const allEvents = storeEvents;
 
-  const [events, setEvents] = useState(allEvents);
-
-  useEffect(() => {
-    setEvents(allEvents);
-  }, [allEvents]);
-
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"timeline" | "list">("timeline");
   const [modalState, setModalState] = useState<{isOpen: boolean, initialData: any, isEdit: boolean}>({ isOpen: false, initialData: null, isEdit: false });
@@ -915,20 +909,20 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
     );
   }
 
-  const sorted = [...events].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const sorted = [...allEvents].sort((a, b) => a.date.getTime() - b.date.getTime());
   const minDate = sorted.length ? sorted[0].date.getTime() : Date.now() - 1e11;
   const maxDate = sorted.length ? sorted[sorted.length - 1].date.getTime() : Date.now();
   const totalMs = Math.max(maxDate - minDate, 1e10);
   const today = Date.now();
 
-  const filtered = events.filter(e => {
+  const filtered = allEvents.filter(e => {
     const typeOk = activeTypes.includes(e.type);
     const searchOk = !search || e.title.toLowerCase().includes(search.toLowerCase()) || (e.description || "").toLowerCase().includes(search.toLowerCase()) || (e.entityName || "").toLowerCase().includes(search.toLowerCase());
     return typeOk && searchOk;
   });
 
   const filteredIds = new Set(filtered.map(e => e.id));
-  const selectedEvent = events.find(e => e.id === selectedId);
+  const selectedEvent = allEvents.find(e => e.id === selectedId);
 
   const canvasWidth = () => canvasRef.current?.offsetWidth || 900;
   const px = useCallback((date: Date | number) => {
@@ -1093,7 +1087,7 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
               <button className={`tl-vtbtn mono ${viewMode === "timeline" ? "active" : ""}`} onClick={() => setViewMode("timeline")}>TIMELINE</button>
               <button className={`tl-vtbtn mono ${viewMode === "list" ? "active" : ""}`} onClick={() => setViewMode("list")}>LIST</button>
             </div>
-            <button className="tl-hbtn" title="Export JSON" onClick={() => { const blob = new Blob([JSON.stringify(events, null, 2)], {type:"application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "abster-events.json"; a.click(); }}>⬇</button>
+            <button className="tl-hbtn" title="Export JSON" onClick={() => { const blob = new Blob([JSON.stringify(allEvents, null, 2)], {type:"application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "abster-events.json"; a.click(); }}>⬇</button>
             <button className="tl-hbtn" title="Settings">⚙</button>
           </div>
         </div>
@@ -1127,7 +1121,7 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
             ))}
           </div>
           <div className="tl-filter-count mono">
-            Showing <span>{filtered.length}</span> of <span>{events.length}</span> events
+            Showing <span>{filtered.length}</span> of <span>{allEvents.length}</span> events
           </div>
         </div>
 
@@ -1178,7 +1172,7 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
                   </div>
 
                   {/* Events */}
-                  {events.map((ev, i) => {
+                  {allEvents.map((ev, i) => {
                     const x = px(ev.date);
                     const col = (EVENT_COLORS as any)[ev.type];
                     const isSelected = selectedId === ev.id;
@@ -1255,7 +1249,7 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
                   setOffset(Math.max(0, ratio * w * scale - w / 2));
                 }}>
                   <div className="tl-minimap-inner">
-                    {events.map(ev => {
+                    {allEvents.map(ev => {
                       const ratio = (ev.date.getTime() - minDate) / totalMs;
                       const col = (EVENT_COLORS as any)[ev.type];
                       return <div key={ev.id} className="tl-minimap-dot" style={{ left: `${ratio * 100}%`, background: col.color }} />;
