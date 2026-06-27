@@ -341,23 +341,29 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
   removeCase: async (id) => {
     const user = get().currentUser;
     if (!user) return;
+    const originalCases = [...get().cases];
+    const originalEntities = [...get().entities];
+    const originalRelations = [...get().relations];
     set(s => ({ cases: s.cases.filter(c => c.id !== id) }));
     try {
       await db.cases.delete(id);
       await get().clearCaseData(id);
     } catch (e) {
       console.error("Error removing case:", e);
+      set({ cases: originalCases, entities: originalEntities, relations: originalRelations });
     }
   },
   
   updateCase: async (id, updates) => {
     const user = get().currentUser;
     if (!user) return;
+    const originalCases = [...get().cases];
     set(s => ({ cases: s.cases.map(c => c.id === id ? { ...c, ...updates } : c) }));
     try {
       await db.cases.update(id, updates);
     } catch (e) {
       console.error("Error updating case:", e);
+      set({ cases: originalCases });
     }
   },
   
@@ -402,12 +408,14 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
   removeChat: async (id) => {
     const user = get().currentUser;
     if (!user) return;
+    const originalChats = [...get().chats];
     set(s => ({ chats: s.chats.filter(c => c.id !== id) }));
     try {
       await db.chats.delete(id);
       await db.messages.where('chatId').equals(id).delete();
     } catch (error) {
       console.error("Error removing chat:", error);
+      set({ chats: originalChats });
     }
   },
 
