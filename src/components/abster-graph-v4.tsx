@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useAbsterStore } from '../store/absterStore';
 import { TRANSFORMS, runTransform } from '../lib/transforms';
 import { TOOLS, CAT_LABELS } from '../data/osint-tools';
+import { generateId } from '../lib/utils';
 import { ExternalLink, X, Search, Info, Shield, Zap } from 'lucide-react';
 
 // ============================================================
@@ -85,7 +86,7 @@ const INITIAL_EDGES: GraphEdge[] = [
 // ============================================================
 // UTILITIES
 // ============================================================
-function generateId() { return Math.random().toString(36).substring(2,11); }
+// generateId imported from ../lib/utils
 function getNodeRadius(nodeId: string, edges: GraphEdge[]) {
   const c = edges.filter(e=>e.source===nodeId||e.target===nodeId).length;
   return Math.max(28, Math.min(90, 24+c*6));

@@ -715,7 +715,7 @@ function AddEventModal({ onClose, onAdd, initialData, isEdit }: { onClose: () =>
   return (
     <div className="tl-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="tl-modal">
-        <div className="tl-modal-title">// {isEdit ? 'EDIT EVENT' : 'ADD EVENT'}</div>
+        <div className="tl-modal-title">{isEdit ? 'EDIT EVENT' : 'ADD EVENT'}</div>
         {error && <div style={{ color: "#EF4444", fontSize: "12px", marginBottom: "10px", fontFamily: "monospace" }}>ERROR: {error}</div>}
         <div className="tl-form-row">
           <label className="tl-form-label">Title *</label>
@@ -884,17 +884,6 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
     return all;
   }, [entities, relations, activeCaseId]);
 
-  if (!activeCaseId) {
-    return (
-      <div className="tl-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", fontFamily: "monospace", height: "100%" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "24px", marginBottom: "10px" }}>⚠️ NO ACTIVE CASE</div>
-          <div>Please select a case from the dashboard to view the timeline.</div>
-        </div>
-      </div>
-    );
-  }
-
   const allEvents = storeEvents;
 
   const [events, setEvents] = useState(allEvents);
@@ -914,6 +903,17 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ active: false, startX: 0, startOffset: 0 });
   const playRef = useRef<any>(null);
+
+  if (!activeCaseId) {
+    return (
+      <div className="tl-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", fontFamily: "monospace", height: "100%" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "24px", marginBottom: "10px" }}>⚠️ NO ACTIVE CASE</div>
+          <div>Please select a case from the dashboard to view the timeline.</div>
+        </div>
+      </div>
+    );
+  }
 
   const sorted = [...events].sort((a, b) => a.date.getTime() - b.date.getTime());
   const minDate = sorted.length ? sorted[0].date.getTime() : Date.now() - 1e11;

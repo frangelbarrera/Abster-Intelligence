@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAbsterStore } from "../store/absterStore";
+import { generateId } from "../lib/utils";
 
 // ════════════════════════════════════════════════════════════════
 //  UTILITIES
 // ════════════════════════════════════════════════════════════════
 const ADJS  = ["GHOST","SHADOW","IRON","SILENT","CRIMSON","BLACK","SILVER","DARK","PHANTOM","RAVEN","STEEL","VOID","APEX","STORM","NOVA","ECHO","VIPER","FROST","ONYX","CIPHER"];
 const NOUNS = ["WOLF","OWL","HAWK","BEAR","FOX","EAGLE","SHARK","LION","COBRA","TIGER","HYDRA","SPECTRE","VORTEX","NEXUS","ATLAS","HELIX","SIGMA","OMEGA","PRISM","LYNX"];
-const uid   = () => Math.random().toString(36).slice(2,11);
+const uid   = () => generateId();
 const cname = () => `${ADJS[Math.floor(Math.random()*ADJS.length)]}-${NOUNS[Math.floor(Math.random()*NOUNS.length)]}-${Math.floor(Math.random()*9000)+1000}`;
 const relTime = (d) => { 
   if (!d) return "--";
@@ -259,7 +260,7 @@ const Bars = ({data}: any) => {
 //  TOAST
 // ════════════════════════════════════════════════════════════════
 const Toast = ({msg,onClose}: any) => {
-  useEffect(()=>{const t=setTimeout(onClose,3200);return()=>clearTimeout(t);},[]);
+  useEffect(()=>{const t=setTimeout(onClose,3200);return()=>clearTimeout(t);},[onClose]);
   return <div style={{position:"fixed",bottom:24,right:24,zIndex:9999,background:"#1A1A1A",border:"1px solid #2A2A2A",borderRadius:6,padding:"12px 18px",color:"#E5E5E5",fontSize:12,fontFamily:"'Courier New',monospace",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",animation:"slideUp 0.2s ease",display:"flex",alignItems:"center",gap:10}}><span style={{color:"#10B981"}}>✦</span>{msg}<button onClick={onClose} style={{background:"none",border:"none",color:"#505050",cursor:"pointer",marginLeft:4}}>×</button></div>;
 };
 

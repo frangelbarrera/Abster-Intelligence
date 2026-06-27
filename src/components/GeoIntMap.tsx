@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Polygon, useMapEvents, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { generateId } from '../lib/utils';
 import { Layers, Map as MapIcon, ShieldAlert, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { LocationModal } from './LocationModal';
 import { useAbsterStore } from '../store/absterStore';
@@ -93,7 +94,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
   const addFeedEvent = (type: FeedEvent['type'], message: string, location?: { lat?: number, lng?: number, bounds?: L.LatLngBoundsExpression }) => {
     setFeedEvents(prev => {
       const newEvent: FeedEvent = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+        id: `${Date.now()}-${generateId()}`,
         timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
         type,
         message,
@@ -130,7 +131,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
       setEarthquakeData(null);
     }
     return () => clearInterval(interval);
-  }, [showEarthquakes]);
+  }, [showEarthquakes, addFeedEvent]);
 
   // Fetch Flights (Using local proxy to Flightradar24 for global coverage)
   useEffect(() => {
@@ -163,7 +164,7 @@ export default function GeoIntMap({ onClose }: { onClose?: () => void }) {
       errorShown = false;
     }
     return () => clearInterval(interval);
-  }, [showFlights, flightDensity]);
+  }, [showFlights, flightDensity, addFeedEvent]);
 
   // Wildfires now rely entirely on the global NASA GIBS TileLayer for international coverage
   // EONET markers were removed as they are often US-centric

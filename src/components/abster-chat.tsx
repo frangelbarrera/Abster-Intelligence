@@ -23,7 +23,7 @@ import { useAbsterStore } from "../store/absterStore";
 const GeoIntMap = dynamic(() => import("./GeoIntMap"), { ssr: false });
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
-const generateId = () => Math.random().toString(36).slice(2, 10);
+import { generateId } from "../lib/utils";
 const maskKey = (key: string) => key ? `••••••${key.slice(-3)}` : "";
 const btoa_safe = (str: string) => { try { return btoa(str); } catch { return str; } };
 const atob_safe = (str: string) => { try { return atob(str); } catch { return str; } };
@@ -556,7 +556,7 @@ export default function AbsterChat() {
         }
       }, 10);
     }
-  }, [inputValue, pendingAttachments, isStreaming, activeChatId, activeChat, selectedProvider, selectedModelId, selectedProviderId, addVaultFile, updateChat]);
+  }, [inputValue, pendingAttachments, isStreaming, activeChatId, activeChat, selectedProvider, selectedModelId, selectedProviderId, addVaultFile, updateChat, currentUser?.uid]);
 
   const stopStream = () => {
     stopStreamRef.current = true; setIsStreaming(false);
@@ -946,7 +946,7 @@ export default function AbsterChat() {
       {deleteConfirm && (
         <Modal onClose={() => setDeleteConfirm(null)}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Delete investigation</div>
-          <div style={{ fontSize: 11, color: "#a0a0a0", marginBottom: 16 }}>Permanently delete "{chats.find((c) => c.id === deleteConfirm)?.title}"?</div>
+          <div style={{ fontSize: 11, color: "#a0a0a0", marginBottom: 16 }}>Permanently delete &ldquo;{chats.find((c) => c.id === deleteConfirm)?.title}&rdquo;?</div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button onClick={() => setDeleteConfirm(null)} style={btnSec}>Cancel</button>
             <button onClick={() => deleteChatAction(deleteConfirm)} style={{ ...btnPri, background: "#EF4444" }}>Delete</button>

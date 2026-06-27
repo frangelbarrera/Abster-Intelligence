@@ -14,14 +14,19 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
     // Check if there's a saved session in localStorage (optional, but good for persistence)
     const savedSession = localStorage.getItem('abster_local_session');
     if (savedSession) {
-      const sessionUser = JSON.parse(savedSession);
-      setUser(sessionUser);
-      store.setCurrentUser(sessionUser);
-      store.loadInitialData().then(() => setLoading(false));
+      try {
+        const sessionUser = JSON.parse(savedSession);
+        setUser(sessionUser);
+        store.setCurrentUser(sessionUser);
+        store.loadInitialData().then(() => setLoading(false));
+      } catch {
+        localStorage.removeItem('abster_local_session');
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [store]);
 
   const handleLogin = async (email?: string, password?: string) => {
     setLoading(true);

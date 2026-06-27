@@ -6,9 +6,9 @@
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "NODE_ENV=production next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint src/"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
@@ -54,7 +54,6 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.80.0",
     "react-leaflet": "^5.0.0",
-    "react-quill": "^2.0.0",
     "react-quill-new": "^3.8.3",
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",

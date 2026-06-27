@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db, LOCAL_USER, type Attachment, type AIProvider } from '../lib/db';
+import { generateId } from '../lib/utils';
 
 export type EntityType = 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENT' | 'DOCUMENT' | 'DEVICE' | 'EMAIL' | 'PHONE' | 'DOMAIN' | 'VEHICLE' | 'CRYPTO' | 'GENERIC';
 
@@ -452,7 +453,7 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
     if (!caseToUpdate) return;
 
     const newLog = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: generateId(),
       type,
       message,
       timestamp: Date.now()

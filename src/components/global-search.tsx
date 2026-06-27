@@ -79,6 +79,7 @@ export default function GlobalSearch() {
     const handleGlobalScan = () => handleManualScan();
     window.addEventListener('abster:initiate_scan', handleGlobalScan);
     return () => window.removeEventListener('abster:initiate_scan', handleGlobalScan);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // AI Report Generation

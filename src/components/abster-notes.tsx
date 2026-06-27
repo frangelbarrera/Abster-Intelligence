@@ -164,7 +164,7 @@ export default function AbsterNotes({ onClose }: { onClose?: () => void }) {
               <span className="text-xl">📝</span> Field Notes
             </h2>
             <p className="text-xs text-gray-500 mt-1 tracking-wider uppercase">
-              // Secure Cloud Storage Enabled. Auto-saving active.
+              Local IndexedDB Storage &bull; Auto-saving active
             </p>
           </div>
         </div>

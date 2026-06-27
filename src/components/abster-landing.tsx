@@ -562,12 +562,12 @@ export default function AbsterLanding({ onLogin }: { onLogin: (email?: string, p
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Relationship Mapping (Graphs):</strong> Interactive visualization of nodes and connections. Allows discovering criminal networks, corporate structures, or links between individuals visually.</li>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Evidence Management:</strong> Secure local storage of images, PDFs, videos, and text documents. Includes a built-in native viewer to preview evidence without leaving the platform.</li>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Timeline:</strong> Automatic chronological organization of events extracted during the investigation to reconstruct facts step by step.</li>
-                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Local-First Privacy:</strong> All data, evidence, and graphs are stored locally in the user's browser via IndexedDB. There are no central servers storing case information.</li>
+                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Local-First Privacy:</strong> All data, evidence, and graphs are stored locally in the user&rsquo;s browser via IndexedDB. There are no central servers storing case information.</li>
                   </ul>
 
                   <h2 style={{ fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:24,color:"#fff",marginBottom:16,marginTop:48,borderBottom:"1px solid #111",paddingBottom:8 }}>Technical Limitations</h2>
                   <ul style={{ listStyle:"none",padding:0,display:"flex",flexDirection:"column",gap:16 }}>
-                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#ef4444" }}>■</span> <strong>Browser Storage:</strong> By using IndexedDB, the maximum capacity depends on the user's free hard drive space and browser quotas (usually several Gigabytes, but not unlimited).</li>
+                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#ef4444" }}>■</span> <strong>Browser Storage:</strong> By using IndexedDB, the maximum capacity depends on the user&rsquo;s free hard drive space and browser quotas (usually several Gigabytes, but not unlimited).</li>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#ef4444" }}>■</span> <strong>Proprietary Formats:</strong> The native viewer does not support complex files like .docx or .xlsx to maintain performance and fidelity. These must be downloaded to be viewed.</li>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#ef4444" }}>■</span> <strong>External API Dependency:</strong> Automated analysis capability depends on the availability and quotas of the AI APIs configured by the user.</li>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#ef4444" }}>■</span> <strong>Data Volatility:</strong> If the user clears browser data (cache/cookies/local storage), all saved cases and evidence will be lost.</li>
@@ -586,8 +586,8 @@ export default function AbsterLanding({ onLogin }: { onLogin: (email?: string, p
               {activeModal === 'Terms' && (
                 <>
                   <h1 style={{ fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:42,color:"#fff",marginBottom:24,letterSpacing:-1 }}>Terms of Use</h1>
-                  <p style={{ marginBottom:20 }}>Abster OSINT Platform is provided "as is", without warranty of any kind, express or implied. By using this platform, you agree that you are solely responsible for your use of the tool and the information collected.</p>
-                  <p style={{ marginBottom:20 }}>This is an open-source tool designed for research, journalism, and security analysis purposes. Using this platform for illegal activities, harassment, or violating third-party privacy is strictly prohibited by the project's ethics, although there are no technical controls to prevent it due to its decentralized and local nature.</p>
+                  <p style={{ marginBottom:20 }}>Abster OSINT Platform is provided &ldquo;as is&rdquo;, without warranty of any kind, express or implied. By using this platform, you agree that you are solely responsible for your use of the tool and the information collected.</p>
+                  <p style={{ marginBottom:20 }}>This is an open-source tool designed for research, journalism, and security analysis purposes. Using this platform for illegal activities, harassment, or violating third-party privacy is strictly prohibited by the project&rsquo;s ethics, although there are no technical controls to prevent it due to its decentralized and local nature.</p>
                 </>
               )}
 
@@ -597,8 +597,8 @@ export default function AbsterLanding({ onLogin }: { onLogin: (email?: string, p
                   <p style={{ marginBottom:20 }}><strong>Absolute Privacy (Local-First).</strong> Abster is designed with privacy as a fundamental pillar.</p>
                   <ul style={{ listStyle:"none",padding:0,display:"flex",flexDirection:"column",gap:16 }}>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Zero Central Servers:</strong> We do not collect, transmit, or store your investigation data, cases, evidence, or graphs on any external server.</li>
-                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Local Storage:</strong> All your information resides exclusively on your device's hard drive, managed by the browser through IndexedDB.</li>
-                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Total Control:</strong> You own your data. If you clear your browser's cache or data, your information will be permanently deleted.</li>
+                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Local Storage:</strong> All your information resides exclusively on your device&rsquo;s hard drive, managed by the browser through IndexedDB.</li>
+                    <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Total Control:</strong> You own your data. If you clear your browser&rsquo;s cache or data, your information will be permanently deleted.</li>
                   </ul>
                 </>
               )}
@@ -606,7 +606,7 @@ export default function AbsterLanding({ onLogin }: { onLogin: (email?: string, p
               {activeModal === 'Security' && (
                 <>
                   <h1 style={{ fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:42,color:"#fff",marginBottom:24,letterSpacing:-1 }}>Security</h1>
-                  <p style={{ marginBottom:20 }}>Abster's architecture minimizes attack vectors by not relying on cloud databases.</p>
+                  <p style={{ marginBottom:20 }}>Abster&rsquo;s architecture minimizes attack vectors by not relying on cloud databases.</p>
                   <ul style={{ listStyle:"none",padding:0,display:"flex",flexDirection:"column",gap:16 }}>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>API Key Management:</strong> Access keys for AI providers (OpenAI, Gemini, Groq, etc.) are saved locally and sent directly from your browser to the official APIs. They never pass through Abster servers.</li>
                     <li style={{ display:"flex",gap:12 }}><span style={{ color:"#10B981" }}>■</span> <strong>Evidence Isolation:</strong> Files uploaded to the Reports Archive are not uploaded to the internet; they are processed and stored as binary Blobs in your local environment.</li>
