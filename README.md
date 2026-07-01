@@ -123,6 +123,41 @@ Abster Intelligence works out-of-the-box for case management and graphing. To en
 
 ---
 
+## Slash Commands
+
+When you don't want to burn an LLM token on a simple lookup, drive investigations directly from the chat input:
+
+| Command | Action |
+|---------|--------|
+| `/hibp user@example.com` | Query HaveIBeenPwned. In demo mode (no HIBP API key) only well-known sample emails return data; with a key, any email works against the live API. Breaches auto-populate the graph as `BREACHED_IN` events. |
+| `/entity add DOMAIN acme-corp.com [description]` | Manually add a node to the active case. Types: PERSON, ORGANIZATION, DOMAIN, EMAIL, PHONE, DEVICE, LOCATION, EVENT, DOCUMENT, VEHICLE, CRYPTO, GENERIC. |
+| `/case list` | List all investigation cases in your local DB. |
+| `/mcp list` | List configured MCP servers. |
+| `/mcp tools <server-id>` | List tools exposed by a configured MCP server. |
+| `/mcp call <server-id> <tool-name> {json-args}` | Invoke an MCP tool and surface its output in the chat. |
+
+## Connecting an MCP Server (e.g. your `osint-agent-skills`)
+
+Abster ships a minimal MCP (Model Context Protocol) client. To connect your existing `osint-agent-skills` MCP server (or any other MCP-compatible server):
+
+1. Start your MCP server with an HTTP transport (e.g. `mcp-proxy` exposing stdio MCP over HTTP, or a native HTTP/SSE transport).
+2. Add a server entry to Abster's `mcpServers` IndexedDB settings:
+
+```json
+{
+  "id": "agent-skills",
+  "label": "OSINT Agent Skills",
+  "url": "http://localhost:3001",
+  "enabled": true
+}
+```
+
+3. From the chat, run `/mcp list` to verify, then `/mcp tools agent-skills` to see available tools, then `/mcp call agent-skills <tool-name> {...}`.
+
+Abster speaks JSON-RPC 2.0 over `fetch` and supports the standard `tools/list` and `tools/call` methods. The `osint-agent-skills` repo is intentionally untouched — Abster consumes it as a generic MCP client.
+
+---
+
 ## Testing
 
 End-to-end tests are powered by [Playwright](https://playwright.dev/) and cover the landing page, cold-start login, and the three demo deep-links.

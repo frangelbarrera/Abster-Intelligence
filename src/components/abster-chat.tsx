@@ -26,6 +26,7 @@ import {
   extractGraphFromResponse,
   mergeGraphIntoActiveCase,
 } from "../lib/entity-extraction";
+import { listTools, callTool, loadMcpServers, type McpServerConfig } from "../lib/mcp-client";
 
 const GeoIntMap = dynamic(() => import("./GeoIntMap"), { ssr: false });
 
@@ -348,9 +349,7 @@ const MODULES = [
   { id: "vault", icon: "", name: "Reports", color: "#EC4899" },
 ];
 
-const NO_PROVIDER_HINT = "No LLM provider configured yet. Add an API key in the Settings panel (gear icon, top-right) to enable the assistant.\n\nMeanwhile, you can still drive investigations with slash commands:\n- `/hibp user@example.com` — query HaveIBeenPwned (works in demo mode without a key)\n- `/entity add DOMAIN acme-corp.com` — manually add a node to the graph\n- `/case list` — switch between investigations";
-
-let demoIdx = 0;
+const NO_PROVIDER_HINT = "No LLM provider configured yet. Add an API key in the Settings panel (gear icon, top-right) to enable the assistant.\n\nMeanwhile, you can still drive investigations with slash commands:\n- `/hibp user@example.com` — query HaveIBeenPwned (works in demo mode without a key)\n- `/entity add DOMAIN acme-corp.com` — manually add a node to the graph\n- `/case list` — switch between investigations\n- `/mcp list` — connect to an MCP server (e.g. your `osint-agent-skills` MCP) and call its tools";
 
 const btnPri = { background: "#fff", border: "none", borderRadius: 6, color: "#000", fontSize: 11, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 };
 const btnSec = { background: "none", border: "1px solid #1a1a1a", borderRadius: 6, color: "#a0a0a0", fontSize: 11, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit" };
@@ -585,8 +584,62 @@ export default function AbsterChat() {
           } else {
             reply = "Usage: `/case list` — list all investigation cases.";
           }
+        } else if (cmd.toLowerCase() === "mcp") {
+          const sub = rest[0]?.toLowerCase();
+          const servers = await loadMcpServers();
+          if (sub === "list" || !sub) {
+            if (servers.length === 0) {
+              reply = "**No MCP servers configured.**\n\nTo connect an MCP server (e.g. your `osint-agent-skills` MCP), add it via the Settings panel or by editing `mcpServers` in IndexedDB settings.\n\nFormat:\n```\n{\n  \"id\": \"agent-skills\",\n  \"label\": \"OSINT Agent Skills\",\n  \"url\": \"http://localhost:3001\",\n  \"enabled\": true\n}\n```";
+            } else {
+              const lines = servers.map(s => `- \`${s.id}\` — ${s.label} (${s.url}) [${s.enabled ? "enabled" : "disabled"}]`);
+              reply = `**${servers.length} MCP server${servers.length > 1 ? "s" : ""}**\n\n${lines.join("\n")}\n\nUse \`/mcp tools <server-id>\` to list callable tools.`;
+            }
+          } else if (sub === "tools") {
+            const serverId = rest[1];
+            const srv = servers.find(s => s.id === serverId);
+            if (!srv) {
+              reply = `No MCP server with id \`${serverId}\`. Run \`/mcp list\` to see configured servers.`;
+            } else {
+              try {
+                const tools = await listTools(srv);
+                if (tools.length === 0) {
+                  reply = `MCP server \`${srv.id}\` exposes no tools.`;
+                } else {
+                  const lines = tools.map(t => `- \`${t.name}\` — ${t.description || "(no description)"}`);
+                  reply = `**${tools.length} tools** on \`${srv.id}\`:\n\n${lines.join("\n")}\n\nUse \`/mcp call <server-id> <tool-name> {json-args}\` to invoke.`;
+                }
+              } catch (err: any) {
+                reply = `Failed to list tools on \`${srv.id}\`: ${err?.message || err}`;
+              }
+            }
+          } else if (sub === "call") {
+            const serverId = rest[1];
+            const toolName = rest[2];
+            const argsJson = rest.slice(3).join(" ");
+            const srv = servers.find(s => s.id === serverId);
+            if (!srv) {
+              reply = `No MCP server with id \`${serverId}\`.`;
+            } else if (!toolName) {
+              reply = "Usage: `/mcp call <server-id> <tool-name> {json-args}`";
+            } else {
+              let args: Record<string, any> = {};
+              if (argsJson) {
+                try { args = JSON.parse(argsJson); }
+                catch { reply = `Invalid JSON args: \`${argsJson}\``; const assistantMsg2 = { id: generateId(), role: "assistant", content: reply, timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null }; updateChat(activeChatId!, { messages: [...updatedMessages, assistantMsg2] }); return; }
+              }
+              try {
+                const result = await callTool(srv, toolName, args);
+                const textParts = (result.content || []).filter(c => c.type === "text").map(c => c.text || "");
+                reply = `**MCP call**: \`${srv.id}.${toolName}\`\n\n\`\`\`\n${textParts.join("\n") || "(no text output)"}\n\`\`\``;
+              } catch (err: any) {
+                reply = `MCP call failed: ${err?.message || err}`;
+              }
+            }
+          } else {
+            reply = "Usage:\n- `/mcp list` — list configured MCP servers\n- `/mcp tools <server-id>` — list tools exposed by a server\n- `/mcp call <server-id> <tool-name> {json-args}` — invoke a tool";
+          }
         } else {
-          reply = `Unknown slash command: \`/${cmd}\`.\n\nAvailable: \`/hibp <email>\`, \`/entity add <TYPE> <name>\`, \`/case list\`.`;
+          reply = `Unknown slash command: \`/${cmd}\`.\n\nAvailable: \`/hibp <email>\`, \`/entity add <TYPE> <name>\`, \`/case list\`, \`/mcp list|tools|call\`.`;
         }
       } catch (err: any) {
         reply = `Command failed: ${err?.message || "unknown error"}`;
