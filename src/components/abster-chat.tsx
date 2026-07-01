@@ -1051,6 +1051,22 @@ export default function AbsterChat() {
 
   const suggestedPrompts = ["Analyze this suspicious domain", "Investigate this person on social media", "Check if this email has breaches", "Extract metadata from this image"];
 
+  // While the local DB is hydrating (settings, providers, active chat id),
+  // show a skeleton instead of an empty app shell. Without this, the visitor
+  // sees a brief "0 GLOBAL ENTITIES / No investigation selected" flash that
+  // looks like the app is broken.
+  if (!mounted) {
+    return (
+      <div style={{ background: "#000", color: "#fff", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 32, height: 32, border: "2px solid #594DFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#594DFF", textTransform: "uppercase" }}>Loading workspace…</div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ fontFamily: "'JetBrains Mono','Fira Code',monospace", background: "#000", color: "#fff", height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
       onClick={() => { setContextMenu(null); setModelDropdownOpen(false); }}>
