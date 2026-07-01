@@ -6,11 +6,11 @@ import { test, expect } from '@playwright/test';
 test('landing renders hero and demo terminal without fake metrics', async ({ page }) => {
   await page.goto('/');
 
-  // Title should mention Abster Intelligence
+  // Title should mention Abster
   await expect(page).toHaveTitle(/Abster/i);
 
-  // Hero text present
-  await expect(page.getByText(/Abster Intelligence/i).first()).toBeVisible();
+  // Hero text present (the landing uses "ABSTER" as a wordmark)
+  await expect(page.locator('body')).toContainText(/ABSTER/i);
 
   // Demo terminal should NOT contain the old fake metrics
   const body = await page.locator('body').innerText();
