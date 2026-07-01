@@ -9,6 +9,11 @@ const EVENT_COLORS = {
   publication: { color: "#F59E0B", bg: "rgba(245,158,11,0.15)", label: "Publication" },
   meeting: { color: "#8B5CF6", bg: "rgba(139,92,246,0.15)", label: "Meeting" },
   breach: { color: "#F97316", bg: "rgba(249,115,22,0.15)", label: "Breach" },
+  mention: { color: "#06B6D4", bg: "rgba(6,182,212,0.15)", label: "Mention" },
+  evidence: { color: "#A855F7", bg: "rgba(168,85,247,0.15)", label: "Evidence" },
+  milestone: { color: "#22C55E", bg: "rgba(34,197,94,0.15)", label: "Milestone" },
+  critical: { color: "#DC2626", bg: "rgba(220,38,38,0.15)", label: "Critical" },
+  warning: { color: "#EAB308", bg: "rgba(234,179,8,0.15)", label: "Warning" },
   generic: { color: "#6B7280", bg: "rgba(107,114,128,0.15)", label: "Generic" },
 };
 
@@ -17,6 +22,7 @@ const ENTITY_ICONS = {
 };
 
 import { useAbsterStore } from '../store/absterStore';
+import { autoGenerateTimelineEvents } from '../lib/timeline-autogen';
 
 function formatDate(date: Date, zoom = "months") {
   if (!date) return "";
@@ -837,9 +843,23 @@ function DetailPanel({ event, onClose, onDelete, onEdit, onDuplicate }: { event:
 }
 
 export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
-  const { entities: allEntities, relations: allRelations, activeCaseId, addEntity, removeEntity, removeRelation, updateEntity } = useAbsterStore();
+  const { entities: allEntities, relations: allRelations, activeCaseId, addEntity, removeEntity, removeRelation, updateEntity, cases, chats, vaultFiles } = useAbsterStore();
   const entities = useMemo(() => allEntities.filter(e => e.caseId === activeCaseId), [allEntities, activeCaseId]);
   const relations = useMemo(() => allRelations.filter(r => r.caseId === activeCaseId), [allRelations, activeCaseId]);
+  const activeCase = useMemo(() => cases.find(c => c.id === activeCaseId), [cases, activeCaseId]);
+
+  // Auto-generate timeline events from chat messages, activity log, and vault uploads.
+  // This implements the README's claim of "auto-generation of events from investigative
+  // reports" — previously the timeline was empty unless the user manually set startDate
+  // on entities.
+  const autoEvents = useMemo(() => {
+    if (!activeCase) return [];
+    const caseVaultFiles = vaultFiles.filter(f => {
+      const caseChats = chats.filter(c => c.caseId === activeCase.id);
+      return caseChats.some(c => c.id === f.chatId);
+    }).map(f => ({ id: f.id, name: f.name, uploadedAt: f.uploadedAt, type: f.type }));
+    return autoGenerateTimelineEvents(activeCase, chats, caseVaultFiles);
+  }, [activeCase, chats, vaultFiles]);
 
   // Map global entities and relations with dates to timeline events
   const storeEvents = useMemo(() => {
@@ -884,7 +904,17 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
     return all;
   }, [entities, relations]);
 
-  const allEvents = storeEvents;
+  const allEvents = useMemo(() => {
+    // Merge manually-authored events (entities/relations with dates) with
+    // auto-generated events (chat mentions, activity log, vault uploads).
+    // Dedupe by id (autoEvents use distinct prefixes so collisions are rare).
+    const merged = new Map<string, any>();
+    for (const e of storeEvents) merged.set(e.id, e);
+    for (const e of autoEvents) {
+      if (!merged.has(e.id)) merged.set(e.id, e);
+    }
+    return Array.from(merged.values());
+  }, [storeEvents, autoEvents]);
 
   // ── All hooks MUST be declared before any early return ───────────────
   // (React rules-of-hooks: hooks must be called in the same order every render.
