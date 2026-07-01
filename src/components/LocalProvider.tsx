@@ -6,14 +6,14 @@ import AbsterLanding from './abster-landing';
 import { LOCAL_USER, db } from '../lib/db';
 import { getDemoCase } from '../lib/demo-cases';
 
+type LoadState = 'loading' | 'ready' | 'error';
+
 export default function LocalProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [loadError, setLoadError] = useState<string | null>(null);
   const store = useAbsterStore();
 
-  // Seed demo case if the URL is a /case/demo/[slug] deep-link.
-  // We do this once per slug, idempotently — if the user deletes the demo case
-  // we don't fight them, but on next cold load it will be re-seeded.
   const seedDemoCaseIfNeeded = async () => {
     if (typeof window === 'undefined') return;
     const path = window.location.pathname;
@@ -26,18 +26,15 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
     try {
       const existing = await db.cases.get(demo.caseData.id);
       if (existing) {
-        // Already seeded — just activate the case and the chat.
         store.setActiveCase(demo.caseData.id);
         const existingChat = await db.chats.get(demo.chat.id);
         if (existingChat) {
-          // Surface the chat as the active one so its messages render immediately.
           const settings = (await db.settings.get('current_user_settings')) || { id: 'current_user_settings', providers: [], selectedProviderId: null, selectedModelId: null, activeChatId: null, apiKeys: {} } as any;
           settings.activeChatId = demo.chat.id;
           await db.settings.put(settings);
         }
         return;
       }
-      // Seed case + entities + relations + chat + messages in one transaction.
       await db.transaction('rw', [db.cases, db.entities, db.relations, db.chats, db.messages, db.settings], async () => {
         await db.cases.add(demo.caseData as any);
         await db.entities.bulkAdd(demo.entities as any);
@@ -47,12 +44,10 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
         if (chatMessages && chatMessages.length > 0) {
           await db.messages.bulkAdd(chatMessages.map(m => ({ ...m, chatId: demo.chat.id })) as any);
         }
-        // Make the demo chat the active one.
         const settings = (await db.settings.get('current_user_settings')) || { id: 'current_user_settings', providers: [], selectedProviderId: null, selectedModelId: null, activeChatId: null, apiKeys: {} } as any;
         settings.activeChatId = demo.chat.id;
         await db.settings.put(settings);
       });
-      // Refresh the store and activate the demo case.
       await store.loadInitialData();
       store.setActiveCase(demo.caseData.id);
     } catch (err) {
@@ -60,10 +55,24 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
     }
   };
 
+  const bootstrap = async (sessionUser: any, isDemoDeepLink: boolean) => {
+    try {
+      setUser(sessionUser);
+      store.setCurrentUser(sessionUser);
+      if (!isDemoDeepLink) {
+        localStorage.setItem('abster_local_session', JSON.stringify(sessionUser));
+      }
+      await store.loadInitialData();
+      await seedDemoCaseIfNeeded();
+      setLoadState('ready');
+    } catch (err: any) {
+      console.error('Abster bootstrap failed', err);
+      setLoadError(err?.message || 'Unknown error during local database initialization.');
+      setLoadState('error');
+    }
+  };
+
   useEffect(() => {
-    // Demo deep-links should auto-login as LOCAL_USER without forcing the visitor
-    // through the landing wall. They are read-only investigations meant to be
-    // shared on HN/Reddit/Twitter — friction here costs us the click.
     const path = typeof window !== "undefined" ? window.location.pathname : "";
     const isDemoDeepLink = /^\/case\/demo\//i.test(path);
 
@@ -71,30 +80,19 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
     if (savedSession || isDemoDeepLink) {
       try {
         const sessionUser = savedSession ? JSON.parse(savedSession) : LOCAL_USER;
-        setUser(sessionUser);
-        store.setCurrentUser(sessionUser);
-        if (isDemoDeepLink && !savedSession) {
-          // Don't persist the demo auto-login — visitor may want to start fresh next time.
-        } else if (savedSession) {
-          localStorage.setItem('abster_local_session', JSON.stringify(sessionUser));
-        }
-        store.loadInitialData()
-          .then(() => seedDemoCaseIfNeeded())
-          .then(() => setLoading(false))
-          .catch((err) => { console.error('loadInitialData failed', err); setLoading(false); });
+        bootstrap(sessionUser, isDemoDeepLink);
       } catch {
         localStorage.removeItem('abster_local_session');
-        setLoading(false);
+        setLoadState('ready');
       }
     } else {
-      setLoading(false);
+      setLoadState('ready');
     }
-    // store from useAbsterStore() is a reactive state snapshot, not a stable reference.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogin = async (email?: string, password?: string) => {
-    setLoading(true);
+    setLoadState('loading');
     let mockUser = LOCAL_USER;
 
     if (email === 'admin' && password === 'admin') {
@@ -103,21 +101,67 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
       mockUser = { uid: 'local-guest-01', email: 'guest@localhost', displayName: 'Local Guest', role: 'guest' };
     }
 
-    setUser(mockUser);
-    store.setCurrentUser(mockUser);
-    localStorage.setItem('abster_local_session', JSON.stringify(mockUser));
-
-    await store.loadInitialData();
-    await seedDemoCaseIfNeeded();
-    setLoading(false);
+    await bootstrap(mockUser, false);
   };
 
-  if (loading) {
+  const handleRetry = () => {
+    setLoadState('loading');
+    setLoadError(null);
+    const savedSession = localStorage.getItem('abster_local_session');
+    const sessionUser = savedSession ? JSON.parse(savedSession) : LOCAL_USER;
+    bootstrap(sessionUser, /^\/case\/demo\//i.test(window.location.pathname));
+  };
+
+  if (loadState === 'loading') {
     return (
       <div className="h-screen w-screen bg-black flex items-center justify-center text-white font-mono">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
           <div className="text-xs tracking-widest text-green-500">INITIALIZING ABSTER OS (LOCAL)...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div className="h-screen w-screen bg-black flex items-center justify-center text-white font-mono p-6">
+        <div className="max-w-md w-full bg-zinc-950 border border-red-900/50 rounded-lg p-6 text-center">
+          <div className="text-red-500 text-3xl mb-3">⚠</div>
+          <div className="text-red-400 text-sm font-bold tracking-wider mb-2">LOCAL DATABASE INITIALIZATION FAILED</div>
+          <div className="text-zinc-400 text-xs mb-4">
+            Abster could not load your local IndexedDB store. This is usually caused by
+            quota exhaustion, a corrupted database, or browser privacy mode blocking storage.
+          </div>
+          {loadError && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded p-2 mb-4 text-left">
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Error detail</div>
+              <code className="text-[10px] text-red-300 break-all">{loadError}</code>
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleRetry}
+              className="w-full px-4 py-2 bg-white text-black text-xs font-bold tracking-wider rounded hover:bg-zinc-200 transition-colors"
+            >
+              RETRY INITIALIZATION
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await db.delete();
+                  localStorage.clear();
+                  window.location.reload();
+                } catch (err) {
+                  console.error('Factory reset failed', err);
+                  window.location.reload();
+                }
+              }}
+              className="w-full px-4 py-2 bg-transparent border border-zinc-700 text-zinc-400 text-xs tracking-wider rounded hover:bg-zinc-900 transition-colors"
+            >
+              FACTORY RESET (DELETE LOCAL DB)
+            </button>
+          </div>
         </div>
       </div>
     );
