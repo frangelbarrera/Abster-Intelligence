@@ -19,6 +19,12 @@ import AbsterTools from "./abster-tools";
 import AbsterNotes from "./abster-notes";
 import AbsterReports from "./abster-reports";
 import { useAbsterStore } from "../store/absterStore";
+import { lookupEmailBreaches, type BreachRecord } from "../lib/hibp";
+import {
+  EXTRACTION_SYSTEM_PROMPT,
+  extractGraphFromResponse,
+  mergeGraphIntoActiveCase,
+} from "../lib/entity-extraction";
 
 const GeoIntMap = dynamic(() => import("./GeoIntMap"), { ssr: false });
 
@@ -110,12 +116,18 @@ const createAdapter = (provider: AIProvider) => {
     contextData = ""
   ) => {
     const userMessages = messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+    // For OpenAI-compatible providers we prepend the extraction system prompt as the first
+    // system message so the LLM also returns the trailing abster-entities block.
+    const messagesWithSystem = [
+      { role: "system", content: contextData ? `${EXTRACTION_SYSTEM_PROMPT}\n\nCurrent investigation context:\n${contextData}` : EXTRACTION_SYSTEM_PROMPT },
+      ...userMessages,
+    ];
     try {
       if (provider.type === "gemini") {
         const ai = new GoogleGenAI({ apiKey: key });
         const modelId = provider.selectedModel || provider.models[0]?.id || "gemini-2.0-flash";
-        
-        let systemInstruction = "You are Abster AI, an advanced intelligence assistant. Respond concisely and professionally.";
+
+        let systemInstruction = EXTRACTION_SYSTEM_PROMPT;
         if (contextData) {
           systemInstruction += `\n\nCurrent investigation context (Entities and Relationships):\n${contextData}`;
         }
@@ -142,30 +154,30 @@ const createAdapter = (provider: AIProvider) => {
       if (provider.type === "groq") {
         url = "https://api.groq.com/openai/v1/chat/completions";
         headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
-        body = JSON.stringify({ model: provider.selectedModel || provider.models[0]?.id || "llama-3.1-8b-instant", messages: userMessages, stream: true });
+        body = JSON.stringify({ model: provider.selectedModel || provider.models[0]?.id || "llama-3.1-8b-instant", messages: messagesWithSystem, stream: true });
       } else if (provider.type === "deepseek") {
         url = "https://api.deepseek.com/chat/completions";
         headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
-        body = JSON.stringify({ model: provider.selectedModel || "deepseek-chat", messages: userMessages, stream: true });
+        body = JSON.stringify({ model: provider.selectedModel || "deepseek-chat", messages: messagesWithSystem, stream: true });
       } else if (provider.type === "ollama") {
         const base = (provider.baseUrl || "http://localhost:11434").replace(/\/$/, "");
         url = `${base}/api/chat`;
         headers = { "Content-Type": "application/json" };
-        body = JSON.stringify({ model: provider.selectedModel || provider.models[0]?.id || "llama3.2", messages: userMessages, stream: true });
+        body = JSON.stringify({ model: provider.selectedModel || provider.models[0]?.id || "llama3.2", messages: messagesWithSystem, stream: true });
       } else if (provider.type === "openrouter") {
         url = "https://openrouter.ai/api/v1/chat/completions";
         headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}`, "HTTP-Referer": "https://abster.intel", "X-Title": "Abster Intelligence" };
-        body = JSON.stringify({ model: provider.selectedModel || provider.models[0]?.id || "openai/gpt-4o-mini", messages: userMessages, stream: true });
+        body = JSON.stringify({ model: provider.selectedModel || provider.models[0]?.id || "openai/gpt-4o-mini", messages: messagesWithSystem, stream: true });
       } else if (provider.type === "mistral") {
         url = "https://api.mistral.ai/v1/chat/completions";
         headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
-        body = JSON.stringify({ model: provider.selectedModel || "mistral-small-latest", messages: userMessages, stream: true });
+        body = JSON.stringify({ model: provider.selectedModel || "mistral-small-latest", messages: messagesWithSystem, stream: true });
       } else if (provider.type === "openai") {
         url = "https://api.openai.com/v1/chat/completions";
         headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
         const model = provider.selectedModel || "gpt-4o";
         const isO1 = model.startsWith("o1");
-        body = JSON.stringify({ model, messages: userMessages, ...(isO1 ? {} : { stream: true }) });
+        body = JSON.stringify({ model, messages: messagesWithSystem, ...(isO1 ? {} : { stream: true }) });
         if (isO1) {
           const resp2 = await fetch(url, { method: "POST", headers, body });
           if (!resp2.ok) { const err = await resp2.text(); onError(`Error ${resp2.status}: ${err.slice(0,200)}`); return; }
@@ -176,17 +188,17 @@ const createAdapter = (provider: AIProvider) => {
       } else if (provider.type === "anthropic") {
         url = "https://api.anthropic.com/v1/messages";
         headers = { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" };
-        body = JSON.stringify({ model: provider.selectedModel || "claude-3-5-sonnet-20241022", max_tokens: 4096, messages: userMessages, stream: true });
+        body = JSON.stringify({ model: provider.selectedModel || "claude-3-5-sonnet-20241022", max_tokens: 4096, system: EXTRACTION_SYSTEM_PROMPT + (contextData ? `\n\nCurrent investigation context:\n${contextData}` : ""), messages: userMessages, stream: true });
       } else if (provider.type === "azure") {
         const azureUrl = provider.baseUrl || "";
         const modelDep = provider.selectedModel || "gpt-4";
         url = `${azureUrl}/openai/deployments/${modelDep}/chat/completions?api-version=2024-02-15-preview`;
         headers = { "Content-Type": "application/json", "api-key": key };
-        body = JSON.stringify({ messages: userMessages, stream: true });
+        body = JSON.stringify({ messages: messagesWithSystem, stream: true });
       } else if (provider.type === "cohere") {
         url = "https://api.cohere.com/v2/chat";
         headers = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
-        body = JSON.stringify({ model: provider.selectedModel || "command-r-plus", messages: userMessages, stream: true });
+        body = JSON.stringify({ model: provider.selectedModel || "command-r-plus", messages: messagesWithSystem, stream: true });
       }
       const resp = await fetch(url, { method: "POST", headers, body });
       if (!resp.ok) { const err = await resp.text(); onError(`Error ${resp.status}: ${err.slice(0,200)}`); return; }
@@ -335,11 +347,8 @@ const MODULES = [
   { id: "vault", icon: "", name: "Reports", color: "#EC4899" },
 ];
 
-const DEMO_RESPONSES = [
-  "Analyzing the request with OSINT focus...\n\n**Identified vectors:**\n- Open sources: LinkedIn, Twitter/X, corporate records\n- Digital exposure level: **MEDIUM-HIGH**\n\n**Findings:**\n1. Presence on networks under name variants detected\n2. Corporate records in 2 jurisdictions\n3. Email in 1 known breach (2021)\n\n> Activate **Deep Research** to dive into specialized sources.",
-  "Executing intelligence analysis...\n\n```json\n{\n  \"risk_score\": 7.4,\n  \"confidence\": 0.82,\n  \"sources_checked\": 14\n}\n```\n\n**Summary:** **High risk** patterns confirmed. Connections with 3 entities under regulatory scrutiny.\n\n**Next step:** Cross-reference with OFAC/international sanctions.",
-  "Processing OSINT request...\n\nOperations network with at least **5 distinct entities** involved.\n\n**Connections map:**\n- Central node → 2 offshore companies\n- Flows to: Cyprus, Dubai, Singapore\n- Activity concentrated between 2020-2023\n\nUse the **Graph** module to visualize the relationships.",
-];
+const NO_PROVIDER_HINT = "No LLM provider configured yet. Add an API key in the Settings panel (gear icon, top-right) to enable the assistant.\n\nMeanwhile, you can still drive investigations with slash commands:\n- `/hibp user@example.com` — query HaveIBeenPwned (works in demo mode without a key)\n- `/entity add DOMAIN acme-corp.com` — manually add a node to the graph\n- `/case list` — switch between investigations";
+
 let demoIdx = 0;
 
 const btnPri = { background: "#fff", border: "none", borderRadius: 6, color: "#000", fontSize: 11, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 };
@@ -479,6 +488,117 @@ export default function AbsterChat() {
   const sendMessage = useCallback(async () => {
     if (!inputValue.trim() && pendingAttachments.length === 0) return;
     if (isStreaming) return;
+
+    // ─── Slash commands ────────────────────────────────────────────────
+    // These run locally without an LLM provider, so investigators can drive
+    // the graph even before configuring an API key.
+    const trimmed = inputValue.trim();
+    if (trimmed.startsWith("/")) {
+      const userMsg = {
+        id: generateId(), role: "user", content: inputValue, timestamp: new Date().getTime(),
+        attachments: [], provider: null,
+      };
+      const updatedMessages = [...(activeChat?.messages || []), userMsg];
+      updateChat(activeChatId!, { messages: updatedMessages });
+      setInputValue("");
+      setPendingAttachments([]);
+      setStreamError(null);
+
+      const [cmd, ...rest] = trimmed.slice(1).split(/\s+/);
+      const arg = rest.join(" ").trim();
+      const caseId = activeChat?.caseId;
+      const ownerId = currentUser?.uid || "local-operator-001";
+      const state = useAbsterStore.getState();
+      const existingEntities = state.entities.filter(e => e.caseId === caseId);
+
+      let reply = "";
+      try {
+        if (cmd.toLowerCase() === "hibp") {
+          const email = arg;
+          if (!email || !email.includes("@")) {
+            reply = "Usage: `/hibp user@example.com`\n\nLooks up breach records via HaveIBeenPwned.\nWithout an HIBP API key configured, only well-known sample emails return demo data.";
+          } else {
+            // Look up HIBP API key from settings if the user has stored one.
+            let hibpKey: string | undefined;
+            try {
+              const settings = await (await import("../lib/db")).db.settings.get("current_user_settings");
+              hibpKey = settings?.apiKeys?.hibp;
+            } catch {}
+            const result = await lookupEmailBreaches(email, hibpKey);
+            if (result.error) {
+              reply = `**HIBP lookup failed** for \`${email}\`\n\n> ${result.error}`;
+            } else if (result.breaches.length === 0) {
+              reply = `**No breaches found** for \`${email}\`\n\n_Source: ${result.source}_`;
+            } else {
+              const lines = result.breaches.map(b =>
+                `- **${b.Title}** (${b.BreachDate}) — ${b.PwnCount.toLocaleString()} accounts. Compromised: ${b.DataClasses.join(", ")}`,
+              );
+              reply = `**${result.breaches.length} breach${result.breaches.length > 1 ? "es" : ""}** found for \`${email}\` (_source: ${result.source}_)\n\n${lines.join("\n")}\n\n_Adding ${result.breaches.length + 1} entities to the graph..._`;
+
+              // Merge into the graph: email node + one event node per breach + relations.
+              const emailEntityName = email;
+              const emailEntityId = existingEntities.find(e => e.name === emailEntityName)?.id
+                || `e-${generateId()}`;
+              if (!existingEntities.find(e => e.name === emailEntityName)) {
+                await state.addEntity({
+                  id: emailEntityId, caseId: caseId!, type: "EMAIL", name: email,
+                  confidence: 1.0, source: "User input", isVerified: true, ownerId,
+                } as any);
+              }
+              for (const b of result.breaches) {
+                const evName = `${b.Title} ${b.BreachDate.slice(0, 4)} Breach`;
+                const evId = `e-${generateId()}`;
+                await state.addEntity({
+                  id: evId, caseId: caseId!, type: "EVENT", name: evName,
+                  description: `${b.PwnCount.toLocaleString()} accounts. Data: ${b.DataClasses.join(", ")}`,
+                  confidence: b.IsVerified ? 0.95 : 0.7, source: `HaveIBeenPwned (${result.source})`,
+                  startDate: b.BreachDate, isVerified: b.IsVerified, ownerId,
+                } as any);
+                await state.addRelation({
+                  id: `r-${generateId()}`, caseId: caseId!,
+                  source: emailEntityId, target: evId, type: "BREACHED_IN",
+                  label: b.BreachDate.slice(0, 4), ownerId,
+                } as any);
+              }
+            }
+          }
+        } else if (cmd.toLowerCase() === "entity") {
+          // /entity add DOMAIN acme-corp.com [description]
+          const [sub, type, ...nameParts] = rest;
+          if (sub?.toLowerCase() !== "add" || !type || nameParts.length === 0) {
+            reply = "Usage: `/entity add DOMAIN acme-corp.com [optional description]`\n\nTypes: PERSON, ORGANIZATION, DOMAIN, EMAIL, PHONE, DEVICE, LOCATION, EVENT, DOCUMENT, VEHICLE, CRYPTO, GENERIC";
+          } else {
+            const name = nameParts.join(" ");
+            const upperType = type.toUpperCase();
+            await state.addEntity({
+              id: `e-${generateId()}`, caseId: caseId!, type: upperType,
+              name, confidence: 1.0, source: "User input", isVerified: false, ownerId,
+            } as any);
+            reply = `Added entity **${upperType}** \`${name}\` to the active case.`;
+          }
+        } else if (cmd.toLowerCase() === "case") {
+          const sub = rest[0]?.toLowerCase();
+          if (sub === "list") {
+            const list = state.cases.map(c => `- \`${c.id}\` — ${c.title} [${c.status}]`).join("\n");
+            reply = `**${state.cases.length} cases**\n\n${list || "_No cases yet._"}`;
+          } else {
+            reply = "Usage: `/case list` — list all investigation cases.";
+          }
+        } else {
+          reply = `Unknown slash command: \`/${cmd}\`.\n\nAvailable: \`/hibp <email>\`, \`/entity add <TYPE> <name>\`, \`/case list\`.`;
+        }
+      } catch (err: any) {
+        reply = `Command failed: ${err?.message || "unknown error"}`;
+      }
+
+      const assistantMsg = {
+        id: generateId(), role: "assistant", content: reply, timestamp: new Date().getTime(),
+        attachments: [], provider: "slash", modelId: null,
+      };
+      updateChat(activeChatId!, { messages: [...updatedMessages, assistantMsg] });
+      return;
+    }
+
     const userMsg = {
       id: generateId(), role: "user", content: inputValue, timestamp: new Date().getTime(),
       attachments: pendingAttachments.map((f) => {
@@ -510,7 +630,7 @@ export default function AbsterChat() {
     }
     const updatedMessages = [...(activeChat?.messages || []), userMsg];
     updateChat(activeChatId!, { messages: updatedMessages });
-    
+
     setInputValue("");
     setPendingAttachments([]);
     setStreamError(null);
@@ -521,7 +641,7 @@ export default function AbsterChat() {
       const providerWithModel = { ...selectedProvider, selectedModel: selectedModelId };
       const adapter = createAdapter(providerWithModel);
       let fullText = "";
-      
+
       const { entities, relations } = useAbsterStore.getState();
       const caseEntities = entities.filter(e => e.caseId === activeChat?.caseId);
       const caseRelations = relations.filter(r => r.caseId === activeChat?.caseId);
@@ -530,12 +650,36 @@ export default function AbsterChat() {
       await adapter.streamText(
         updatedMessages.filter((m) => m.role !== "system"),
         (chunk) => { if (stopStreamRef.current) return; fullText += chunk; setStreamingText(fullText); },
-        () => {
+        async () => {
           setIsStreaming(false);
-          const msg = { id: generateId(), role: "assistant", content: fullText, timestamp: new Date().getTime(), attachments: [], provider: selectedProviderId, modelId: selectedModelId };
-          updateChat(activeChatId!, { 
-            messages: [...updatedMessages, msg], 
-            metadata: { ...activeChat?.metadata, totalMessages: (activeChat?.metadata?.totalMessages || 0) + 2 } 
+
+          // Parse out the trailing ```abster-entities block and merge into the graph.
+          let textForMessage = fullText;
+          try {
+            const extraction = extractGraphFromResponse(fullText);
+            if (extraction.malformed) {
+              console.warn("[entity-extraction] LLM emitted a malformed abster-entities block");
+            }
+            if (extraction.graph && extraction.graph.entities.length > 0) {
+              textForMessage = extraction.cleanedText;
+              const store = useAbsterStore.getState();
+              const fresh = store.entities.filter(e => e.caseId === activeChat?.caseId);
+              await mergeGraphIntoActiveCase(extraction.graph, {
+                caseId: activeChat?.caseId!,
+                ownerId: currentUser?.uid || "local-operator-001",
+                existingEntities: fresh,
+                addEntity: store.addEntity,
+                addRelation: store.addRelation,
+              });
+            }
+          } catch (err) {
+            console.error("[entity-extraction] merge failed", err);
+          }
+
+          const msg = { id: generateId(), role: "assistant", content: textForMessage, timestamp: new Date().getTime(), attachments: [], provider: selectedProviderId, modelId: selectedModelId };
+          updateChat(activeChatId!, {
+            messages: [...updatedMessages, msg],
+            metadata: { ...activeChat?.metadata, totalMessages: (activeChat?.metadata?.totalMessages || 0) + 2 }
           });
           setStreamingText("");
         },
@@ -543,18 +687,19 @@ export default function AbsterChat() {
         contextData
       );
     } else {
-      const text = DEMO_RESPONSES[demoIdx++ % DEMO_RESPONSES.length];
+      // No provider configured — surface an honest hint instead of fake demo responses.
+      const text = NO_PROVIDER_HINT;
       let i = 0;
       const interval = setInterval(() => {
         if (stopStreamRef.current) { clearInterval(interval); setIsStreaming(false); setStreamingText(""); return; }
         if (i < text.length) { setStreamingText(text.slice(0, ++i)); }
         else {
           clearInterval(interval); setIsStreaming(false);
-          const msg = { id: generateId(), role: "assistant", content: text, timestamp: new Date().getTime(), attachments: [], provider: "demo", modelId: null };
+          const msg = { id: generateId(), role: "assistant", content: text, timestamp: new Date().getTime(), attachments: [], provider: "hint", modelId: null };
           updateChat(activeChatId!, { messages: [...updatedMessages, msg] });
           setStreamingText("");
         }
-      }, 10);
+      }, 6);
     }
   }, [inputValue, pendingAttachments, isStreaming, activeChatId, activeChat, selectedProvider, selectedModelId, selectedProviderId, addVaultFile, updateChat, currentUser?.uid]);
 
