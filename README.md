@@ -187,10 +187,29 @@ When you don't want to burn an LLM token on a simple lookup, drive investigation
 
 ## Connecting an MCP Server (e.g. your `osint-agent-skills`)
 
-Abster ships a minimal MCP (Model Context Protocol) client. To connect your existing `osint-agent-skills` MCP server (or any other MCP-compatible server):
+Abster ships a minimal MCP (Model Context Protocol) client that speaks JSON-RPC 2.0 over HTTP. It supports the standard `tools/list` and `tools/call` methods. The `osint-agent-skills` repo is intentionally untouched — Abster consumes it as a generic MCP client.
 
-1. Start your MCP server with an HTTP transport (e.g. `mcp-proxy` exposing stdio MCP over HTTP, or a native HTTP/SSE transport).
-2. Add a server entry to Abster's `mcpServers` IndexedDB settings:
+Because Abster runs in the browser, it cannot spawn the stdio MCP server directly (browsers sandbox child-process spawning). You need a small HTTP bridge. The recommended bridge is [`mcp-proxy`](https://www.npmjs.com/package/mcp-proxy), which exposes any stdio MCP server over HTTP on a local port. The bridge also bypasses CORS restrictions for OSINT APIs that don't send `Access-Control-Allow-Origin` headers (HIBP, Shodan live, VirusTotal, etc.) — see [Known CORS limitations](#known-cors-limitations).
+
+### One-time setup
+
+```bash
+# 1. Clone your osint-agent-skills repo (skip if you already have it)
+git clone https://github.com/frangelbarrera/osint-agent-skills.git
+cd osint-agent-skills
+
+# 2. Install dependencies (if you haven't already)
+npm install
+
+# 3. Start the MCP server behind an HTTP bridge on port 3001
+npx mcp-proxy --port 3001 -- node tools/mcp-server.js
+```
+
+Leave that terminal running. The MCP server is now reachable at `http://localhost:3001`.
+
+### Wire it into Abster
+
+Add a server entry to Abster's `mcpServers` IndexedDB settings (you can do this from the browser DevTools console, or by running `/mcp list` once and following the prompt):
 
 ```json
 {
@@ -201,9 +220,15 @@ Abster ships a minimal MCP (Model Context Protocol) client. To connect your exis
 }
 ```
 
-3. From the chat, run `/mcp list` to verify, then `/mcp tools agent-skills` to see available tools, then `/mcp call agent-skills <tool-name> {...}`.
+### Use it from the chat
 
-Abster speaks JSON-RPC 2.0 over `fetch` and supports the standard `tools/list` and `tools/call` methods. The `osint-agent-skills` repo is intentionally untouched — Abster consumes it as a generic MCP client.
+```
+/mcp list                          → verify the server is connected
+/mcp tools agent-skills            → list the 23 tools it exposes (DNS, RDAP, crt.sh, Wayback, Shodan, HIBP, GitHub, urlscan, OTX, Gravatar, VirusTotal, SecurityTrails, Hunter, Nominatim, blockchain.info, Etherscan, Mastodon, ...)
+/mcp call agent-skills dns_lookup {"domain":"example.com"}    → invoke a tool and surface its output in the chat
+```
+
+The MCP bridge pattern means Abster can consume any stdio MCP server in the ecosystem — not just `osint-agent-skills`. If you have other MCP servers (filesystem, database, custom agents), the same `mcp-proxy` bridge works for all of them.
 
 ---
 
