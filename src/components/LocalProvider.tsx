@@ -5,6 +5,7 @@ import { useAbsterStore } from '../store/absterStore';
 import AbsterLanding from './abster-landing';
 import { LOCAL_USER, db } from '../lib/db';
 import { getDemoCase } from '../lib/demo-cases';
+import { decodeCaseFromSharing } from '../lib/case-sharing';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -55,6 +56,106 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
     }
   };
 
+  // Decode a shared case from the URL hash (e.g. /case/share#<compressed>)
+  // and seed it into IndexedDB. The shared case becomes a regular case owned
+  // by the local user — they can extend it, edit it, and re-share their
+  // modified version. We bump the case id to avoid clobbering an existing
+  // case with the same id (e.g. if the user already has a copy).
+  const seedSharedCaseIfNeeded = async () => {
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname;
+    if (!/^\/case\/share\b/.test(path)) return;
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return;
+
+    const payload = decodeCaseFromSharing(hash);
+    if (!payload) {
+      console.warn('Failed to decode shared case from URL hash');
+      return;
+    }
+
+    // Generate fresh IDs so the shared case doesn't collide with anything
+    // already in the receiver's DB.
+    const newCaseId = `shared-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const entityIdMap = new Map<string, string>();
+    const chatIdMap = new Map<string, string>();
+
+    const newCase = {
+      ...payload.case,
+      id: newCaseId,
+      codeName: `${payload.case.codeName || 'SHARED'}-RECV`,
+      title: `${payload.case.title} (shared copy)`,
+      ownerId: LOCAL_USER.uid,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      activityLog: [
+        ...(payload.case.activityLog || []),
+        { id: `log-${Date.now()}`, type: 'INFO', message: 'Case imported from shared URL', timestamp: Date.now() },
+      ],
+    };
+
+    const newEntities = payload.entities.map(e => {
+      const newId = `e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      entityIdMap.set(e.id, newId);
+      return { ...e, id: newId, caseId: newCaseId, ownerId: LOCAL_USER.uid };
+    });
+
+    const newRelations = payload.relations.map(r => ({
+      ...r,
+      id: `r-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      caseId: newCaseId,
+      source: entityIdMap.get(r.source) || r.source,
+      target: entityIdMap.get(r.target) || r.target,
+      ownerId: LOCAL_USER.uid,
+    }));
+
+    const newChats: any[] = [];
+    const newMessages: any[] = [];
+    for (const chat of payload.chats) {
+      const newChatId = `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      chatIdMap.set(chat.id, newChatId);
+      const { messages, ...chatMeta } = chat;
+      newChats.push({
+        ...chatMeta,
+        id: newChatId,
+        caseId: newCaseId,
+        ownerId: LOCAL_USER.uid,
+        createdAt: chat.createdAt || new Date().toISOString(),
+        updatedAt: chat.updatedAt || new Date().toISOString(),
+      });
+      if (messages && messages.length) {
+        for (const m of messages) {
+          newMessages.push({
+            ...m,
+            id: `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            chatId: newChatId,
+          });
+        }
+      }
+    }
+
+    try {
+      await db.transaction('rw', [db.cases, db.entities, db.relations, db.chats, db.messages, db.settings], async () => {
+        await db.cases.add(newCase as any);
+        if (newEntities.length) await db.entities.bulkAdd(newEntities as any);
+        if (newRelations.length) await db.relations.bulkAdd(newRelations as any);
+        if (newChats.length) {
+          await db.chats.bulkAdd(newChats as any);
+          if (newMessages.length) await db.messages.bulkAdd(newMessages as any);
+        }
+        const settings = (await db.settings.get('current_user_settings')) || { id: 'current_user_settings', providers: [], selectedProviderId: null, selectedModelId: null, activeChatId: null, apiKeys: {} } as any;
+        settings.activeChatId = newChats[0]?.id || null;
+        await db.settings.put(settings);
+      });
+      await store.loadInitialData();
+      store.setActiveCase(newCaseId);
+      // Clear the hash so a refresh doesn't re-import the same case.
+      try { history.replaceState(null, '', path); } catch {}
+    } catch (err) {
+      console.error('Failed to seed shared case', err);
+    }
+  };
+
   const bootstrap = async (sessionUser: any, isDemoDeepLink: boolean) => {
     try {
       setUser(sessionUser);
@@ -64,6 +165,7 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
       }
       await store.loadInitialData();
       await seedDemoCaseIfNeeded();
+      await seedSharedCaseIfNeeded();
       setLoadState('ready');
     } catch (err: any) {
       console.error('Abster bootstrap failed', err);
@@ -75,9 +177,10 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     const path = typeof window !== "undefined" ? window.location.pathname : "";
     const isDemoDeepLink = /^\/case\/demo\//i.test(path);
+    const isShareDeepLink = /^\/case\/share\b/.test(path);
 
     const savedSession = localStorage.getItem('abster_local_session');
-    if (savedSession || isDemoDeepLink) {
+    if (savedSession || isDemoDeepLink || isShareDeepLink) {
       try {
         const sessionUser = savedSession ? JSON.parse(savedSession) : LOCAL_USER;
         bootstrap(sessionUser, isDemoDeepLink);
@@ -177,3 +280,4 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
 
   return <>{children}</>;
 }
+

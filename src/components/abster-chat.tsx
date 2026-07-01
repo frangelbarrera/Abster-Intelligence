@@ -35,6 +35,12 @@ import {
   mergeToolResultIntoCase,
   type ToolResult,
 } from "../lib/osint-tools";
+import {
+  buildShareableUrl,
+  estimateShareableSize,
+  copyToClipboard,
+  encodeCaseForSharing,
+} from "../lib/case-sharing";
 
 const GeoIntMap = dynamic(() => import("./GeoIntMap"), { ssr: false });
 
@@ -1144,6 +1150,42 @@ export default function AbsterChat() {
                 {activeChat.caseId && <span style={{ fontSize: 9, color: "#525252", background: "#111", padding: "2px 6px", borderRadius: 10, border: "1px solid #1a1a1a" }}>{cases.find(c => c.id === activeChat.caseId)?.codeName || activeChat.caseId}</span>}
                 <div style={{ flex: 1 }} />
                 <span style={{ fontSize: 9, color: "#333" }}>{activeChat.metadata?.totalMessages || 0} msg</span>
+                {(() => {
+                  const sharedCase = cases.find(c => c.id === activeChat.caseId);
+                  if (!sharedCase) return null;
+                  const handleShare = async () => {
+                    const caseEntities = useAbsterStore.getState().entities.filter(e => e.caseId === sharedCase.id);
+                    const caseRelations = useAbsterStore.getState().relations.filter(r => r.caseId === sharedCase.id);
+                    const caseChats = useAbsterStore.getState().chats.filter(c => c.caseId === sharedCase.id);
+                    const compressed = encodeCaseForSharing(sharedCase, caseEntities, caseRelations, caseChats);
+                    const sizeKb = estimateShareableSize(compressed);
+                    const url = buildShareableUrl(sharedCase, caseEntities, caseRelations, caseChats);
+                    if (!url) {
+                      alert("Could not build shareable URL — the case is too large or contains unserializable data.");
+                      return;
+                    }
+                    if (sizeKb > 7) {
+                      const ok = confirm(`This case is ${sizeKb} KB compressed. URLs longer than ~8 KB may be truncated by some browsers. Consider using the Markdown / HTML export in the Reports module instead. Continue anyway?`);
+                      if (!ok) return;
+                    }
+                    const copied = await copyToClipboard(url);
+                    if (copied) {
+                      alert(`Shareable URL copied to clipboard (${sizeKb} KB).\n\nPaste it anywhere — DMs, email, Slack. The receiver will see the full case (graph + chat) when they open the link.\n\nThe URL contains the full case data in the hash fragment, which is never sent to the server.`);
+                    } else {
+                      // Fallback: open the URL in a new window so the user can copy it manually
+                      window.prompt("Copy this shareable URL:", url);
+                    }
+                  };
+                  return (
+                    <button
+                      onClick={handleShare}
+                      title="Generate a shareable URL for this case (local-first: data stays in the URL hash)"
+                      style={{ background: "none", border: "1px solid #1a1a1a", color: "#a0a0a0", fontSize: 9, padding: "3px 8px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <span style={{ fontSize: 11 }}>↗</span> SHARE
+                    </button>
+                  );
+                })()}
               </div>
 
               <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
