@@ -26,7 +26,7 @@ Abster Intelligence operates under a strict data sovereignty paradigm:
 * No Abster-hosted central case database is required or exists.
 * Provider keys are configured directly by the user in the UI.
 * The platform does not act as a mandatory data relay. When you use an external AI provider, your prompts go directly to them.
-* OSINT tool lookups (`/shodan`, `/whois`, `/dns`, `/wayback`, `/hibp`) hit the upstream API directly from your browser. No proxy, no relay, no logging.
+* OSINT tool lookups (`/shodan`, `/whois`, `/dns`, `/wayback`, `/hibp`) hit the upstream API directly from your browser. Most are free and work without a key (`/whois`, `/dns`, `/wayback`); `/shodan` and `/hibp` work in demo mode without a key and hit the live API with one. Note: `/hibp` live mode and `/wayback` full-history queries are CORS-restricted by the upstream APIs — see the [Known CORS limitations](#known-cors-limitations) section.
 * Shareable case URLs encode the case data in the URL hash fragment (`#...`) — browsers never send the hash to the server, so even Vercel's access logs cannot see your case data.
 
 ## Core Features
@@ -53,7 +53,7 @@ Abster Intelligence operates under a strict data sovereignty paradigm:
 
 * **Shareable Case URLs:** Compress any case into a URL hash fragment and send it to a collaborator. They open the link, the case loads into their IndexedDB as a fresh copy. No backend, no account, no API keys. (Soft limit ~8 KB compressed.)
 
-* **Native OSINT Tools (no LLM key required):** Five slash commands hit free public APIs directly from the chat and auto-populate the graph with extracted entities + relations.
+* **Native OSINT Tools:** Five slash commands (`/hibp`, `/shodan`, `/whois`, `/dns`, `/wayback`) call public OSINT APIs directly from the chat and auto-populate the graph with extracted entities + relations. `/whois`, `/dns`, and `/wayback` are free and keyless; `/shodan` and `/hibp` have demo modes that work without a key and live modes that accept one.
 
 * **XSS-Shielded Interface:** Hardened UI with strict DOM sanitization (`isomorphic-dompurify`) ensuring protection against script injections in rendered markdown.
 
@@ -67,7 +67,7 @@ Abster Intelligence operates under a strict data sovereignty paradigm:
 
 * No sensitive keys are required or supported in public `.env` files.
 * **UI Configuration:** You must configure your provider API credentials directly within the application's Setup/Settings UI.
-* Keys are securely persisted in your local browser storage—they never leave your machine.
+* Keys are stored locally in your browser's IndexedDB (base64-encoded, not encrypted at rest). They never leave your machine except when you explicitly send a prompt to your chosen LLM provider. For higher-threat models, consider using a dedicated browser profile or rotating keys frequently.
 
 ## Tech Stack
 
@@ -279,6 +279,20 @@ npm run test:e2e:ui
 ```
 
 Continuous integration runs `lint`, `tsc --noEmit`, `next build`, and the Playwright suite on every push and pull request — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+## Known CORS limitations
+
+Browser-based OSINT tools are constrained by the upstream API's CORS policy. Abster's slash commands behave as follows:
+
+| Command | Without API key | With API key | CORS status |
+|---------|-----------------|--------------|-------------|
+| `/whois <domain>` | Works (free RDAP) | N/A | rdap.org sends `Access-Control-Allow-Origin: *` |
+| `/dns <domain>` | Works (free Google DoH) | N/A | dns.google sends CORS headers |
+| `/wayback <url>` | Works (closest snapshot) | N/A | archive.org/wayback/available sends CORS headers; the CDX API (full history) does NOT — we use the availability API instead |
+| `/shodan <ip>` | Demo mode (canned data for 8.8.8.8 and 1.1.1.1) | Live mode blocked by CORS — api.shodan.io does not send `Access-Control-Allow-Origin` for browser requests. Use the [Shodan website](https://www.shodan.io/host/) directly, or route through the `osint-agent-skills` MCP server (which runs server-side and bypasses CORS). |
+| `/hibp <email>` | Demo mode (3 sample emails) | Live mode blocked by CORS — haveibeenpwned.com does not send `Access-Control-Allow-Origin` for browser requests. Use the [HIBP website](https://haveibeenpwned.com/) directly, or route through the `osint-agent-skills` MCP server. |
+
+The `/shodan` and `/hibp` live modes are the only commands that cannot run directly from the browser. The demo modes return realistic canned data so the UX is still functional; the limitation is documented here for transparency.
 
 ## Known Issues
 
