@@ -424,12 +424,19 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
     try {
       const { messages, ...chatData } = finalUpdates;
       await db.chats.update(id, chatData);
-      
-      // If messages are updated, we need to sync them
+
+      // If messages are updated, sync them in a single transaction so the
+      // delete + bulkAdd are atomic. Without the transaction, concurrent
+      // updateChat calls (e.g. demo seed + sidebar activation) can race:
+      // the delete finishes but the bulkAdd tries to insert messages whose
+      // IDs already exist, producing a ConstraintError.
       if (messages) {
-        // Simple approach: delete old, insert new
-        await db.messages.where('chatId').equals(id).delete();
-        await db.messages.bulkAdd(messages.map(m => ({ ...m, chatId: id })) as any);
+        await db.transaction('rw', db.messages, async () => {
+          await db.messages.where('chatId').equals(id).delete();
+          if (messages.length > 0) {
+            await db.messages.bulkAdd(messages.map(m => ({ ...m, chatId: id })) as any);
+          }
+        });
       }
     } catch (error) {
       console.error("Error updating chat:", error);
