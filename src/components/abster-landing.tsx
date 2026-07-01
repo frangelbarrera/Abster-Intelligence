@@ -460,11 +460,8 @@ export default function AbsterLanding({ onLogin }: { onLogin: (email?: string, p
 
       {/* ── HERO ── */}
       <section style={{ minHeight:"100vh",display:"flex",alignItems:"center",padding:"80px clamp(24px,5vw,72px) 60px",position:"relative" }}>
-        {/* Background Video */}
-        <div style={{ position:"absolute",inset:0,zIndex:0,overflow:"hidden" }}>
-          <video autoPlay loop muted playsInline style={{ width:"100%",height:"100%",objectFit:"cover",opacity:0.3,filter:"grayscale(100%) contrast(1.2)" }}>
-            <source src="/video.mp4" type="video/mp4" />
-          </video>
+        {/* Background — animated gradient (replaces missing /video.mp4) */}
+        <div style={{ position:"absolute",inset:0,zIndex:0,overflow:"hidden",background:"radial-gradient(circle at 20% 30%, rgba(89,77,255,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(89,77,255,0.05) 0%, transparent 50%), #050505" }}>
           <div style={{ position:"absolute",inset:0,background:"linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.9) 100%)" }} />
           <div style={{ position:"absolute",inset:0,background:"radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.8) 100%)" }} />
         </div>
