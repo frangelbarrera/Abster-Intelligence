@@ -172,6 +172,15 @@ npm run test:e2e:ui
 
 Continuous integration runs `lint`, `tsc --noEmit`, `next build`, and the Playwright suite on every push and pull request — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
+## Known Issues
+
+These are documented for transparency — none are launch-blockers but all are tracked for follow-up:
+
+- **Blob URL memory leak** in `src/store/absterStore.ts` (lines 167 and 428): `URL.createObjectURL(file.data)` is called when loading vault files but the corresponding `URL.revokeObjectURL()` is never called when files are removed. Long sessions with many uploads will slowly leak memory.
+- **React Hooks order** in `src/components/abster-timeline.tsx` (lines 885, 928, 980): `useCallback` and `useEffect` are called conditionally after an early return. This violates the rules-of-hooks and can cause inconsistent renders when the timeline module is toggled.
+- **`<img>` vs `next/image`**: four call sites in `abster-graph-v4.tsx`, `abster-reports.tsx`, and `global-search.tsx` use raw `<img>` tags. Migrating to `next/image` would improve LCP and bandwidth.
+- **No user-facing error state** when `loadInitialData` fails: the loading spinner is dismissed but the user is left on a blank shell. Should be surfaced as a toast with a retry button.
+
 ## 🤝 Contributing
 
 Abster Intelligence is an open-source project and **contributions are welcome**. Whether it's a bug fix, a new provider integration, or a UI enhancement:
