@@ -381,7 +381,7 @@ export default function AbsterIntelligence() {
       }}>
         <div>SYSTEM_TIME: {new Date().toISOString()}</div>
         <div>OPERATOR: {activeCase?.leadInvestigator || "[REDACTED]"}</div>
-        <div>VERSION: 4.2.1-STABLE</div>
+        <div>VERSION: 1.0.0</div>
       </div>
     </div>
   );

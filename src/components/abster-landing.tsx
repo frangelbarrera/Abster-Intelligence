@@ -163,18 +163,18 @@ function NetworkGlobe() {
 }
 
 /* ─────────────────────────────────────────────
-   TERMINAL
+   TERMINAL — Real product flow (no fake metrics)
 ───────────────────────────────────────────── */
 const termLines = [
-  { txt: "$ abster scan --target [REDACTED] --deep", col: "#888" },
-  { txt: "> Initializing passive reconnaissance...", col: "#555" },
-  { txt: "> DNS enumeration: 47 records resolved", col: "#22c55e" },
-  { txt: "> Social footprint scan [████████░░] 82%", col: "#555" },
-  { txt: "> Exposed credentials found: 3 entries", col: "#f59e0b" },
-  { txt: "> Building entity relationship graph...", col: "#555" },
-  { txt: "> ALERT: High-risk node @ 192.168.0.47", col: "#ef4444" },
-  { txt: "> Correlating 1,247 intelligence points...", col: "#555" },
-  { txt: "✓ Report generated — classification: TOP SECRET", col: "#888" },
+  { txt: "$ abster case new --name \"Acme breach investigation\"", col: "#888" },
+  { txt: "> Case CASE-a1b2c3 created (local IndexedDB)", col: "#22c55e" },
+  { txt: "$ abster entity add --type DOMAIN --value acme-corp.com", col: "#888" },
+  { txt: "> Entity e-001 persisted to graph", col: "#555" },
+  { txt: "$ abster ask \"Find breaches for emails at acme-corp.com\"", col: "#888" },
+  { txt: "> Calling HaveIBeenPwned (sliding-window, demo key)...", col: "#555" },
+  { txt: "> 2 breach records returned — adding as graph nodes", col: "#22c55e" },
+  { txt: "> Auto-linking: acme-corp.com --(BREACHED_IN)--> LinkedIn 2021", col: "#594DFF" },
+  { txt: "✓ Investigation saved — /case/CASE-a1b2c3", col: "#888" },
 ];
 
 function Terminal() {
@@ -213,7 +213,7 @@ function Terminal() {
     <div style={{ background:"#060606", border:"1px solid #111", borderRadius:12, overflow:"hidden", fontFamily:"'Space Mono',monospace", fontSize:"11px", boxShadow:"0 20px 60px rgba(0,0,0,0.7)" }}>
       <div style={{ background:"#090909", borderBottom:"1px solid #111", padding:"10px 16px", display:"flex", alignItems:"center", gap:"8px" }}>
         {["#3a3a3a","#2a2a2a","#222"].map((c,i) => <div key={i} style={{ width:10,height:10,borderRadius:"50%",background:c }} />)}
-        <span style={{ color:"#2a2a2a", marginLeft:8, letterSpacing:"1.5px", fontSize:"9px", textTransform:"uppercase" }}>ABSTER — OSINT ENGINE v2.4.1</span>
+        <span style={{ color:"#2a2a2a", marginLeft:8, letterSpacing:"1.5px", fontSize:"9px", textTransform:"uppercase" }}>ABSTER — DEMO FLOW</span>
       </div>
       <div ref={ref} style={{ padding:"16px", height:"220px", overflowY:"auto", scrollbarWidth:"none" }}>
         {lines.map((l, i) => (
@@ -226,31 +226,27 @@ function Terminal() {
 }
 
 /* ─────────────────────────────────────────────
-   THREAT FEED
+   SAMPLE FEED — Example investigation events
 ───────────────────────────────────────────── */
 const threats = [
-  { level:"HIGH", msg:"Credential leak detected — darkweb forum #4821", time:"2s ago", col:"#ef4444" },
-  { level:"MED",  msg:"New domain registered matching target pattern", time:"14s ago", col:"#f59e0b" },
-  { level:"INFO", msg:"47 new social mentions indexed for entity #229", time:"31s ago", col:"#888" },
-  { level:"HIGH", msg:"Exposed API key found in public repository", time:"1m ago", col:"#ef4444" },
-  { level:"LOW",  msg:"DNS record change detected on monitored subdomain", time:"3m ago", col:"#555" },
-  { level:"MED",  msg:"Geolocation shift detected on tracked device", time:"7m ago", col:"#f59e0b" },
+  { level:"HIGH", msg:"Email user@acme-corp.com found in 2 breaches", time:"sample", col:"#ef4444" },
+  { level:"MED",  msg:"Domain acme-corp.com — 47 subdomains enumerated", time:"sample", col:"#f59e0b" },
+  { level:"INFO", msg:"Entity #229 linked to organization via WHOIS", time:"sample", col:"#888" },
+  { level:"INFO", msg:"Graph auto-layout: 12 nodes, 18 edges", time:"sample", col:"#888" },
+  { level:"LOW",  msg:"Timeline entry added: 2024-03-15 (first breach)", time:"sample", col:"#555" },
+  { level:"MED",  msg:"New note attached to case CASE-a1b2c3", time:"sample", col:"#f59e0b" },
 ];
 
 function ThreatFeed() {
   const [items, setItems] = useState(threats);
-  useEffect(() => {
-    const id = setInterval(() => setItems(p => [p[p.length-1], ...p.slice(0,-1)]), 3400);
-    return () => clearInterval(id);
-  }, []);
   return (
     <div style={{ background:"#050505", border:"1px solid #111", borderRadius:12, overflow:"hidden" }}>
       <div style={{ padding:"13px 20px", borderBottom:"1px solid #0d0d0d", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <div style={{ width:6,height:6,borderRadius:"50%",background:"#ef4444",boxShadow:"0 0 8px #ef4444",animation:"pulse 1.5s ease-in-out infinite" }} />
-          <span style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:"#333", letterSpacing:2, textTransform:"uppercase" }}>Live Threat Feed</span>
+          <span style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:"#333", letterSpacing:2, textTransform:"uppercase" }}>Sample Investigation Events</span>
         </div>
-        <span style={{ fontFamily:"'Space Mono',monospace", fontSize:"9px", color:"#1e1e1e", letterSpacing:1 }}>CLASSIFIED</span>
+        <span style={{ fontFamily:"'Space Mono',monospace", fontSize:"9px", color:"#1e1e1e", letterSpacing:1 }}>EXAMPLE</span>
       </div>
       {items.slice(0, 5).map((t, i) => (
         <div key={i} style={{ padding:"11px 20px", borderBottom:"1px solid #090909", display:"flex", alignItems:"center", gap:12, animation: i===0?"fadeIn 0.4s ease":"none" }}>
