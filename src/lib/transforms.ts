@@ -1,4 +1,22 @@
-import { GoogleGenAI } from "@google/genai";
+/**
+ * Transform registry for the graph right-click context menu.
+ *
+ * Each transform maps to a `toolCategory` that opens the MaltegoSidebar
+ * (external-tools catalog). The sidebar lists curated OSINT tools for that
+ * category and lets the investigator launch them in a new tab.
+ *
+ * NOTE: This file previously contained a `runTransform` function that
+ * prompted Gemini to "be realistic but creative" and invent OSINT entities
+ * (social handles, emails, associates) from thin air. That code was
+ * unreachable in practice (every transform has a toolCategory, so the
+ * sidebar branch always fired) and posed a credibility risk — fabricated
+ * entities would have been merged into the investigation graph as if they
+ * were real evidence. It has been removed.
+ *
+ * If a future transform is added without a toolCategory, the
+ * handleRunTransform in abster-graph-v4.tsx surfaces a console warning
+ * rather than silently hallucinating data.
+ */
 
 export interface Transform {
   id: string;
@@ -37,74 +55,3 @@ export const TRANSFORMS: Record<string, Transform[]> = {
     { id: 'cr_wallets', label: 'Related Wallets', icon: '👛', description: 'Identify other wallets frequently interacting with this one.', toolCategory: 'crypto' },
   ]
 };
-
-export async function runTransform(
-  node: { id: string; label: string; type: string; properties?: Record<string, any> },
-  transformId: string
-) {
-  let apiKey: string | undefined = undefined;
-  
-  try {
-    const { db } = await import('./db');
-    const settings = await db.settings.get('current_user_settings');
-    if (settings && settings.providers) {
-      const geminiProvider = settings.providers.find((p: any) => p.type === 'gemini');
-      if (geminiProvider && geminiProvider.apiKey) {
-        try { 
-          apiKey = atob(geminiProvider.apiKey); 
-        } catch(e) { 
-          apiKey = geminiProvider.apiKey; 
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("Could not retrieve local API key", err);
-  }
-
-  if (!apiKey) {
-    console.warn("API Key not found. AI transforms will not work.");
-    throw new Error("API Key not configured. Please configure an AI provider in your Chat settings.");
-  }
-
-  const genAI = new GoogleGenAI({ apiKey });
-
-  const transform = Object.values(TRANSFORMS).flat().find(t => t.id === transformId);
-  
-  const prompt = `
-    You are an OSINT (Open Source Intelligence) transform engine.
-    Target Entity:
-    - Name/Label: ${node.label}
-    - Type: ${node.type}
-    - Properties: ${JSON.stringify(node.properties || {})}
-    
-    Action: Run Transform "${transform?.label}" (${transform?.description})
-    
-    Generate a JSON response containing new entities (nodes) and relationships (edges) discovered through this transform.
-    Be realistic but creative. If it's a person, find social handles, emails, or associates. If it's a domain, find IPs, subdomains, or WHOIS info.
-    
-    Return ONLY a JSON object with this structure:
-    {
-      "nodes": [
-        { "id": "unique_id", "label": "Name", "type": "person|company|email|phone|location|domain|document|vehicle|crypto|event", "properties": {}, "notes": "Reason for discovery" }
-      ],
-      "edges": [
-        { "source": "${node.id}", "target": "unique_id", "label": "knows|works_at|family_of|owns|communicates_with|located_at|registered_to|transaction_with|related_to|custom", "strength": 1-10 }
-      ]
-    }
-    
-    Limit to 3-6 new nodes.
-  `;
-
-  try {
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-    });
-    const text = result.text || "";
-    const jsonStr = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(jsonStr);
-  } catch (error) {
-    console.error("Transform failed:", error);
-    throw error;
-  }
-}
