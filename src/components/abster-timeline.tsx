@@ -840,7 +840,7 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
   const { entities: allEntities, relations: allRelations, activeCaseId, addEntity, removeEntity, removeRelation, updateEntity } = useAbsterStore();
   const entities = useMemo(() => allEntities.filter(e => e.caseId === activeCaseId), [allEntities, activeCaseId]);
   const relations = useMemo(() => allRelations.filter(r => r.caseId === activeCaseId), [allRelations, activeCaseId]);
-  
+
   // Map global entities and relations with dates to timeline events
   const storeEvents = useMemo(() => {
     const entityEvents = entities
@@ -882,10 +882,15 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
 
     const all = [...entityEvents, ...relationEvents];
     return all;
-  }, [entities, relations, activeCaseId]);
+  }, [entities, relations]);
 
   const allEvents = storeEvents;
 
+  // ── All hooks MUST be declared before any early return ───────────────
+  // (React rules-of-hooks: hooks must be called in the same order every render.
+  // Previously useState/useRef/useCallback/useEffect were split around the
+  // `if (!activeCaseId) return` guard, which violated that rule and could
+  // cause inconsistent renders when toggling the timeline module.)
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"timeline" | "list">("timeline");
   const [modalState, setModalState] = useState<{isOpen: boolean, initialData: any, isEdit: boolean}>({ isOpen: false, initialData: null, isEdit: false });
@@ -898,33 +903,24 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
   const dragRef = useRef({ active: false, startX: 0, startOffset: 0 });
   const playRef = useRef<any>(null);
 
-  if (!activeCaseId) {
-    return (
-      <div className="tl-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", fontFamily: "monospace", height: "100%" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "24px", marginBottom: "10px" }}>⚠️ NO ACTIVE CASE</div>
-          <div>Please select a case from the dashboard to view the timeline.</div>
-        </div>
-      </div>
-    );
-  }
-
-  const sorted = [...allEvents].sort((a, b) => a.date.getTime() - b.date.getTime());
+  // Derived values (pure functions of state) — computed unconditionally so the
+  // hooks below can safely depend on them.
+  const sorted = useMemo(() => [...allEvents].sort((a, b) => a.date.getTime() - b.date.getTime()), [allEvents]);
   const minDate = sorted.length ? sorted[0].date.getTime() : Date.now() - 1e11;
   const maxDate = sorted.length ? sorted[sorted.length - 1].date.getTime() : Date.now();
   const totalMs = Math.max(maxDate - minDate, 1e10);
   const today = Date.now();
 
-  const filtered = allEvents.filter(e => {
+  const filtered = useMemo(() => allEvents.filter(e => {
     const typeOk = activeTypes.includes(e.type);
     const searchOk = !search || e.title.toLowerCase().includes(search.toLowerCase()) || (e.description || "").toLowerCase().includes(search.toLowerCase()) || (e.entityName || "").toLowerCase().includes(search.toLowerCase());
     return typeOk && searchOk;
-  });
+  }), [allEvents, activeTypes, search]);
 
   const filteredIds = new Set(filtered.map(e => e.id));
   const selectedEvent = allEvents.find(e => e.id === selectedId);
 
-  const canvasWidth = () => canvasRef.current?.offsetWidth || 900;
+  const canvasWidth = useCallback(() => canvasRef.current?.offsetWidth || 900, []);
   const px = useCallback((date: Date | number) => {
     const ms = new Date(date).getTime();
     const ratio = (ms - minDate) / totalMs;
@@ -932,9 +928,9 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
     const scaledW = w * scale;
     const visibleStart = -offset;
     return ratio * scaledW - visibleStart + 60;
-  }, [minDate, totalMs, offset, scale]);
+  }, [minDate, totalMs, offset, scale, canvasWidth]);
 
-  const getTicks = () => {
+  const getTicks = useCallback(() => {
     const ticks: any[] = [];
     const start = new Date(minDate);
     const end = new Date(maxDate);
@@ -948,34 +944,34 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
       }
     }
     return ticks;
-  };
+  }, [minDate, maxDate, scale]);
 
-  const handleMouseDown = (e: any) => {
+  const handleMouseDown = useCallback((e: any) => {
     if (viewMode !== "timeline") return;
     dragRef.current = { active: true, startX: e.clientX, startOffset: offset };
-  };
-  const handleMouseMove = (e: any) => {
+  }, [viewMode, offset]);
+  const handleMouseMove = useCallback((e: any) => {
     if (!dragRef.current.active) return;
     const dx = e.clientX - dragRef.current.startX;
     setOffset(Math.max(0, dragRef.current.startOffset - dx));
-  };
-  const handleMouseUp = () => { dragRef.current.active = false; };
+  }, []);
+  const handleMouseUp = useCallback(() => { dragRef.current.active = false; }, []);
 
-  const handleWheel = (e: any) => {
+  const handleWheel = useCallback((e: any) => {
     if (viewMode !== "timeline") return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.15 : 0.15;
     setScale(s => Math.max(0.5, Math.min(8, s + delta)));
-  };
+  }, [viewMode]);
 
-  const fitAll = () => { setScale(1); setOffset(0); };
-  const goToday = () => {
+  const fitAll = useCallback(() => { setScale(1); setOffset(0); }, []);
+  const goToday = useCallback(() => {
     const ratio = (today - minDate) / totalMs;
     const w = canvasWidth();
     setOffset(Math.max(0, ratio * w * scale - w / 2));
-  };
-  const zoomIn = () => setScale(s => Math.min(8, s * 1.3));
-  const zoomOut = () => setScale(s => Math.max(0.5, s / 1.3));
+  }, [today, minDate, totalMs, scale, canvasWidth]);
+  const zoomIn = useCallback(() => setScale(s => Math.min(8, s * 1.3)), []);
+  const zoomOut = useCallback(() => setScale(s => Math.max(0.5, s / 1.3)), []);
 
   useEffect(() => {
     if (isPlaying) {
@@ -994,11 +990,23 @@ export default function AbsterTimeline({ onClose }: { onClose?: () => void }) {
       }, 1500);
     } else { clearInterval(playRef.current); }
     return () => clearInterval(playRef.current);
-  }, [isPlaying, scale, filtered, selectedId, minDate, totalMs]);
+  }, [isPlaying, scale, filtered, selectedId, minDate, totalMs, canvasWidth]);
 
-  const toggleType = (type: string) => {
+  const toggleType = useCallback((type: string) => {
     setActiveTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
-  };
+  }, []);
+
+  // ── Early return AFTER all hooks have been declared ──────────────────
+  if (!activeCaseId) {
+    return (
+      <div className="tl-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", fontFamily: "monospace", height: "100%" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "24px", marginBottom: "10px" }}>⚠️ NO ACTIVE CASE</div>
+          <div>Please select a case from the dashboard to view the timeline.</div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSaveEvent = (data: any, editId?: string) => {
     if (editId && modalState.isEdit) {
