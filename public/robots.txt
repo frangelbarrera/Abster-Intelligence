@@ -1,0 +1,14 @@
+# Abster Intelligence — robots.txt
+# Allow all crawlers full access. The app is fully client-side rendered
+# (Next.js App Router with "use client" components), so crawlers will
+# primarily index the landing page and the static metadata (OG tags,
+# description, etc.). The case deep-links (/case/demo/*) render their
+# content client-side via IndexedDB, so crawlers won't see the demo
+# graphs — but the URLs are still shareable and the OG tags on the
+# landing page are what matter for link previews.
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://abster-intelligence.vercel.app/sitemap.xml
