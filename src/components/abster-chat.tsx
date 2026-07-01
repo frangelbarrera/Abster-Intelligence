@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, Suspense, useMemo } from "react";
 import { GoogleGenAI, Type } from "@google/genai";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { 
   FileText, Image as ImageIcon, File, Download, Trash2, UploadCloud, 
   FileArchive, FileCode, Search, Filter, MoreVertical, X, CheckCircle2,
@@ -1020,7 +1021,17 @@ export default function AbsterChat() {
               />
             </>
           ) : (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#333", fontSize: 12 }}>Select an investigation</div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#444", fontSize: 12, gap: 8, padding: 20, textAlign: "center" }}>
+              <div style={{ fontSize: 28, opacity: 0.4 }}>⌕</div>
+              <div>No investigation selected</div>
+              <div style={{ fontSize: 10, color: "#333", maxWidth: 280 }}>
+                Create one with the <span style={{ color: "#fff" }}>NEW INVESTIGATION</span> button on the left,
+                or try a ready-made demo:{" "}
+                <Link href="/case/demo/breach" style={{ color: "#594DFF" }}>breach</Link>,{" "}
+                <Link href="/case/demo/domain" style={{ color: "#594DFF" }}>domain</Link>,{" "}
+                <Link href="/case/demo/person" style={{ color: "#594DFF" }}>person</Link>.
+              </div>
+            </div>
           )}
         </div>
 
