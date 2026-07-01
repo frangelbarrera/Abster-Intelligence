@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAbsterStore } from '../store/absterStore';
 import AbsterLanding from './abster-landing';
 import { LOCAL_USER, db } from '../lib/db';
@@ -13,20 +14,34 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
   const [user, setUser] = useState<any>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
   const store = useAbsterStore();
+  const pathname = usePathname();
+
+  // Guards to prevent concurrent seeding runs (React 18 StrictMode + dev
+  // double-invoke can trigger the pathname effect twice in a row, which
+  // races the IndexedDB transactions and causes "Key already exists" errors).
+  const seedingDemoRef = React.useRef(false);
+  const seedingShareRef = React.useRef(false);
 
   const seedDemoCaseIfNeeded = async () => {
     if (typeof window === 'undefined') return;
-    const path = window.location.pathname;
-    const m = path.match(/^\/case\/demo\/([a-z0-9-]+)/i);
-    if (!m) return;
-    const slug = m[1];
-    const demo = getDemoCase(slug);
-    if (!demo) return;
-
+    if (seedingDemoRef.current) return; // prevent concurrent runs
+    seedingDemoRef.current = true;
     try {
+      const path = window.location.pathname;
+      const m = path.match(/^\/case\/demo\/([a-z0-9-]+)/i);
+      if (!m) return;
+      const slug = m[1];
+      const demo = getDemoCase(slug);
+      if (!demo) return;
+
       const existing = await db.cases.get(demo.caseData.id);
       if (existing) {
+        // The demo case already exists in IndexedDB (e.g. seeded on a previous
+        // visit). Refresh the Zustand store so the UI picks it up, then
+        // activate it + surface its chat.
+        await store.loadInitialData();
         store.setActiveCase(demo.caseData.id);
         const existingChat = await db.chats.get(demo.chat.id);
         if (existingChat) {
@@ -53,6 +68,8 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
       store.setActiveCase(demo.caseData.id);
     } catch (err) {
       console.error('Failed to seed demo case', err);
+    } finally {
+      seedingDemoRef.current = false;
     }
   };
 
@@ -63,78 +80,80 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
   // case with the same id (e.g. if the user already has a copy).
   const seedSharedCaseIfNeeded = async () => {
     if (typeof window === 'undefined') return;
-    const path = window.location.pathname;
-    if (!/^\/case\/share\b/.test(path)) return;
-    const hash = window.location.hash.replace(/^#/, '');
-    if (!hash) return;
+    if (seedingShareRef.current) return; // prevent concurrent runs
+    seedingShareRef.current = true;
+    try {
+      const path = window.location.pathname;
+      if (!/^\/case\/share\b/.test(path)) return;
+      const hash = window.location.hash.replace(/^#/, '');
+      if (!hash) return;
 
-    const payload = decodeCaseFromSharing(hash);
-    if (!payload) {
-      console.warn('Failed to decode shared case from URL hash');
-      return;
-    }
+      const payload = decodeCaseFromSharing(hash);
+      if (!payload) {
+        console.warn('Failed to decode shared case from URL hash');
+        return;
+      }
 
-    // Generate fresh IDs so the shared case doesn't collide with anything
-    // already in the receiver's DB.
-    const newCaseId = `shared-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-    const entityIdMap = new Map<string, string>();
-    const chatIdMap = new Map<string, string>();
+      // Generate fresh IDs so the shared case doesn't collide with anything
+      // already in the receiver's DB.
+      const newCaseId = `shared-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      const entityIdMap = new Map<string, string>();
+      const chatIdMap = new Map<string, string>();
 
-    const newCase = {
-      ...payload.case,
-      id: newCaseId,
-      codeName: `${payload.case.codeName || 'SHARED'}-RECV`,
-      title: `${payload.case.title} (shared copy)`,
-      ownerId: LOCAL_USER.uid,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      activityLog: [
-        ...(payload.case.activityLog || []),
-        { id: `log-${Date.now()}`, type: 'INFO', message: 'Case imported from shared URL', timestamp: Date.now() },
-      ],
-    };
-
-    const newEntities = payload.entities.map(e => {
-      const newId = `e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-      entityIdMap.set(e.id, newId);
-      return { ...e, id: newId, caseId: newCaseId, ownerId: LOCAL_USER.uid };
-    });
-
-    const newRelations = payload.relations.map(r => ({
-      ...r,
-      id: `r-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-      caseId: newCaseId,
-      source: entityIdMap.get(r.source) || r.source,
-      target: entityIdMap.get(r.target) || r.target,
-      ownerId: LOCAL_USER.uid,
-    }));
-
-    const newChats: any[] = [];
-    const newMessages: any[] = [];
-    for (const chat of payload.chats) {
-      const newChatId = `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-      chatIdMap.set(chat.id, newChatId);
-      const { messages, ...chatMeta } = chat;
-      newChats.push({
-        ...chatMeta,
-        id: newChatId,
-        caseId: newCaseId,
+      const newCase = {
+        ...payload.case,
+        id: newCaseId,
+        codeName: `${payload.case.codeName || 'SHARED'}-RECV`,
+        title: `${payload.case.title} (shared copy)`,
         ownerId: LOCAL_USER.uid,
-        createdAt: chat.createdAt || new Date().toISOString(),
-        updatedAt: chat.updatedAt || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        activityLog: [
+          ...(payload.case.activityLog || []),
+          { id: `log-${Date.now()}`, type: 'INFO', message: 'Case imported from shared URL', timestamp: Date.now() },
+        ],
+      };
+
+      const newEntities = payload.entities.map(e => {
+        const newId = `e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        entityIdMap.set(e.id, newId);
+        return { ...e, id: newId, caseId: newCaseId, ownerId: LOCAL_USER.uid };
       });
-      if (messages && messages.length) {
-        for (const m of messages) {
-          newMessages.push({
-            ...m,
-            id: `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-            chatId: newChatId,
-          });
+
+      const newRelations = payload.relations.map(r => ({
+        ...r,
+        id: `r-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        caseId: newCaseId,
+        source: entityIdMap.get(r.source) || r.source,
+        target: entityIdMap.get(r.target) || r.target,
+        ownerId: LOCAL_USER.uid,
+      }));
+
+      const newChats: any[] = [];
+      const newMessages: any[] = [];
+      for (const chat of payload.chats) {
+        const newChatId = `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        chatIdMap.set(chat.id, newChatId);
+        const { messages, ...chatMeta } = chat;
+        newChats.push({
+          ...chatMeta,
+          id: newChatId,
+          caseId: newCaseId,
+          ownerId: LOCAL_USER.uid,
+          createdAt: chat.createdAt || new Date().toISOString(),
+          updatedAt: chat.updatedAt || new Date().toISOString(),
+        });
+        if (messages && messages.length) {
+          for (const m of messages) {
+            newMessages.push({
+              ...m,
+              id: `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+              chatId: newChatId,
+            });
+          }
         }
       }
-    }
 
-    try {
       await db.transaction('rw', [db.cases, db.entities, db.relations, db.chats, db.messages, db.settings], async () => {
         await db.cases.add(newCase as any);
         if (newEntities.length) await db.entities.bulkAdd(newEntities as any);
@@ -153,6 +172,8 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
       try { history.replaceState(null, '', path); } catch {}
     } catch (err) {
       console.error('Failed to seed shared case', err);
+    } finally {
+      seedingShareRef.current = false;
     }
   };
 
@@ -166,6 +187,7 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
       await store.loadInitialData();
       await seedDemoCaseIfNeeded();
       await seedSharedCaseIfNeeded();
+      setHasBootstrapped(true);
       setLoadState('ready');
     } catch (err: any) {
       console.error('Abster bootstrap failed', err);
@@ -174,6 +196,7 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
     }
   };
 
+  // Initial bootstrap on first mount.
   useEffect(() => {
     const path = typeof window !== "undefined" ? window.location.pathname : "";
     const isDemoDeepLink = /^\/case\/demo\//i.test(path);
@@ -187,20 +210,46 @@ export default function LocalProvider({ children }: { children: React.ReactNode 
       } catch {
         localStorage.removeItem('abster_local_session');
         setLoadState('ready');
+        setHasBootstrapped(true);
       }
     } else {
       setLoadState('ready');
+      setHasBootstrapped(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-run demo/share seeding on client-side route changes.
+  // Without this, navigating from the landing to /case/demo/breach via a
+  // <Link> would not seed the demo because bootstrap() only runs on mount.
+  // We guard with hasBootstrapped so this effect is a no-op until the
+  // initial bootstrap has completed.
+  useEffect(() => {
+    if (!hasBootstrapped) return;
+    if (!user) return;
+    if (!pathname) return;
+    const isDemo = /^\/case\/demo\//i.test(pathname);
+    const isShare = /^\/case\/share\b/.test(pathname);
+    if (!isDemo && !isShare) return;
+    // Run the seeders (they're idempotent — they no-op if the case already exists).
+    seedDemoCaseIfNeeded().catch(err => console.error('demo seed on route change failed', err));
+    seedSharedCaseIfNeeded().catch(err => console.error('share seed on route change failed', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, hasBootstrapped, user]);
 
   const handleLogin = async (email?: string, password?: string) => {
     setLoadState('loading');
     let mockUser = LOCAL_USER;
 
+    // Only the explicit 'admin'/'admin' and 'guest' shortcuts override
+    // LOCAL_USER. Previously `(!email && !password)` fell through to the
+    // guest branch, which gave the visitor a uid of 'local-guest-01' — that
+    // uid owns no demo cases (they're owned by 'local-operator-001'), so the
+    // demo seed was invisible to the visitor. Default to LOCAL_USER so the
+    // demo cases are immediately visible after clicking START INVESTIGATION.
     if (email === 'admin' && password === 'admin') {
       mockUser = { uid: 'local-admin-01', email: 'admin@localhost', displayName: 'Local Admin', role: 'admin' };
-    } else if (email === 'guest' || (!email && !password)) {
+    } else if (email === 'guest') {
       mockUser = { uid: 'local-guest-01', email: 'guest@localhost', displayName: 'Local Guest', role: 'guest' };
     }
 
