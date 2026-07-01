@@ -39,6 +39,7 @@
     "@radix-ui/react-tooltip": "^1.2.10",
     "@turf/turf": "^7.3.4",
     "@types/leaflet": "^1.9.21",
+    "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",

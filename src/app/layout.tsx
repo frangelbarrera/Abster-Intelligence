@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 // metadataBase resolves relative OG image URLs to absolute URLs.
@@ -78,6 +79,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-[#18181F] text-foreground">
         {children}
+        <Analytics />
       </body>
     </html>
   );
