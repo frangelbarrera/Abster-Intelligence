@@ -20,9 +20,12 @@ function makeCase(partial: Partial<Case>): Case {
     codeName: partial.codeName || "DEMO",
     title: partial.title || "Demo Case",
     description: partial.description || "",
-    priority: partial.priority || "MEDIUM",
-    status: "ACTIVE",
-    classification: "UNCLASSIFIED",
+    // Use lowercase values that match the lookup maps (PC, SC, CC) in
+    // abster-case-manager.tsx. Uppercase values like "HIGH" or unknown
+    // values like "UNCLASSIFIED" cause cfg undefined -> crash on .color access.
+    priority: partial.priority || "medium",
+    status: "active",
+    classification: "public",
     createdAt: now(),
     updatedAt: now(),
     leadInvestigator: "Demo Operator",
@@ -48,7 +51,7 @@ const DEMO_BREACH: DemoCase = {
     codeName: "BREACH-DEMO",
     title: "Email Breach Investigation — Demo",
     description: "Pre-built demo showing how Abster links an email to its breach history via HaveIBeenPwned.",
-    priority: "HIGH",
+    priority: "high",
     tags: ["demo", "hibp", "breach", "email"],
   }),
   entities: [
@@ -85,7 +88,7 @@ const DEMO_DOMAIN: DemoCase = {
     codeName: "DOMAIN-DEMO",
     title: "Domain Reconnaissance — Demo",
     description: "Pre-built demo showing a domain pivot: WHOIS, DNS, subdomains and related infrastructure.",
-    priority: "MEDIUM",
+    priority: "medium",
     tags: ["demo", "domain", "dns", "whois"],
   }),
   entities: [
@@ -126,7 +129,7 @@ const DEMO_PERSON: DemoCase = {
     codeName: "PERSON-DEMO",
     title: "Person-of-Interest Investigation — Demo",
     description: "Pre-built demo showing a multi-platform pivot across socials, employer, and known email.",
-    priority: "MEDIUM",
+    priority: "medium",
     tags: ["demo", "person", "social", "pivot"],
   }),
   entities: [
