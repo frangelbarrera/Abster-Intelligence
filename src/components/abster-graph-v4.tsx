@@ -968,7 +968,9 @@ function NodeDetailPanel({ node, edges, nodes, onClose, onUpdate, onDelete, onSe
           <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
             {/* PHASE 5: Avatar display in panel */}
             <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"#111",border:`2px solid ${color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"17px",flexShrink:0,overflow:"hidden",position:"relative"}}>
-              {node.avatar ? <img src={node.avatar} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}} onError={(e: any)=>e.target.style.display="none"}/> : (NODE_ICONS as any)[node.type]}
+              {node.avatar ? (
+                <img src={node.avatar} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}} onError={(e: any)=>e.target.style.display="none"}/>
+              ) : (NODE_ICONS as any)[node.type]}
             </div>
             <div>
               <div style={{fontSize:"7px",color:"#505050",letterSpacing:"0.1em",marginBottom:"1px"}}>{node.type.toUpperCase()} · {node.source.replace("_"," ").toUpperCase()}</div>
@@ -1086,7 +1088,9 @@ function NodeDetailPanel({ node, edges, nodes, onClose, onUpdate, onDelete, onSe
             <div style={{fontSize:"8px",color:"#505050",letterSpacing:"0.1em",marginBottom:"10px"}}>ENTITY IMAGE / AVATAR</div>
             <div style={{display:"flex",justifyContent:"center",marginBottom:"14px"}}>
               <div style={{width:"80px",height:"80px",borderRadius:"50%",background:"#111",border:`2px solid ${color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"32px",overflow:"hidden",flexShrink:0}}>
-                {node.avatar?<img src={node.avatar} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(e: any)=>e.target.style.display="none"}/>:(NODE_ICONS as any)[node.type]}
+                {node.avatar ? (
+                  <img src={node.avatar} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(e: any)=>e.target.style.display="none"}/>
+                ) : (NODE_ICONS as any)[node.type]}
               </div>
             </div>
             <label style={{display:"block",marginBottom:"10px",width:"100%"}}>

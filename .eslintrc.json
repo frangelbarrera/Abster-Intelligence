@@ -5,5 +5,17 @@
     "react/jsx-no-comment-textnodes": "warn",
     "react-hooks/rules-of-hooks": "warn",
     "@next/next/no-img-element": "warn"
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/components/abster-chat.tsx",
+        "src/components/abster-reports.tsx",
+        "src/components/abster-graph-v4.tsx"
+      ],
+      "rules": {
+        "@next/next/no-img-element": "off"
+      }
+    }
+  ]
 }

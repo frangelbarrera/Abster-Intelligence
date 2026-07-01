@@ -96,6 +96,8 @@ export default function AbsterReports({ onClose }: { onClose: () => void }) {
     const isPdf = actualMime === 'application/pdf' || file.name.endsWith('.pdf');
 
     if (typeStr === 'image' || actualMime.startsWith('image/')) {
+      // Blob URLs from IndexedDB can't be optimized by next/image at runtime,
+      // so we use a raw <img> tag for vault-file previews.
       return <img src={file.url} alt={file.name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />;
     }
     if (typeStr === 'video' || actualMime.startsWith('video/')) {

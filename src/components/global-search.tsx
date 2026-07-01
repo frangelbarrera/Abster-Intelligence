@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from 'react';
+import Image from 'next/image';
 import { useAbsterStore } from '../store/absterStore';
 
 export default function GlobalSearch() {
@@ -361,7 +362,13 @@ END OF PACKET
           className="bg-[#131313] border border-[#494847]/30 aspect-square relative group overflow-hidden cursor-pointer"
         >
           <div className={`scanline-overlay absolute inset-0 z-10 opacity-20 pointer-events-none ${isScanning ? 'animate-pulse' : ''}`}></div>
-          <img alt="World Map with Data Overlays" className={`w-full h-full object-cover grayscale opacity-60 group-hover:scale-110 transition-transform duration-700 ${isScanning ? 'brightness-150' : ''}`} src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoVqtsgafPe10jKhK0A-_Tbl0lLRRfYdbYotbGZbobT8zsoGKB2p4r25thEtGSt0jbp1WvxDgijZBPdl9fnd-ISlSz-qLVADcsSqqwaBlCt_DRSSJUWK3aNAAgxc1GomLbGjmS9mUBYmzNp2CtfS51y9u7oj247VNtv1qh8K4hAdAPyE0MsgE-Q4agcD4ivHs7hf3pGipOM5WmQfb4c6v-a3wRZpy0fql0qOQoPxRvTrmPtrQhQSLWpGH999soPt0gTI0iCwIvAU"/>
+          <Image
+            alt="World Map with Data Overlays"
+            className={`w-full h-full object-cover grayscale opacity-60 group-hover:scale-110 transition-transform duration-700 ${isScanning ? 'brightness-150' : ''}`}
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoVqtsgafPe10jKhK0A-_Tbl0lLRRfYdbYotbGZbobT8zsoGKB2p4r25thEtGSt0jbp1WvxDgijZBPdl9fnd-ISlSz-qLVADcsSqqwaBlCt_DRSSJUWK3aNAAgxc1GomLbGjmS9mUBYmzNp2CtfS51y9u7oj247VNtv1qh8K4hAdAPyE0MsgE-Q4agcD4ivHs7hf3pGipOM5WmQfb4c6v-a3wRZpy0fql0qOQoPxRvTrmPtrQhQSLWpGH999soPt0gTI0iCwIvAU"
+            fill
+            unoptimized
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] to-transparent"></div>
           <div className="absolute top-4 left-4 z-20">
             <div className="flex items-center gap-2 px-2 py-1 bg-[#262626]/80 backdrop-blur-md border border-[#81ecff]/30">
