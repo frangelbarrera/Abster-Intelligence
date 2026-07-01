@@ -27,6 +27,14 @@ import {
   mergeGraphIntoActiveCase,
 } from "../lib/entity-extraction";
 import { listTools, callTool, loadMcpServers, type McpServerConfig } from "../lib/mcp-client";
+import {
+  shodanLookup,
+  whoisLookup,
+  dnsLookup,
+  waybackLookup,
+  mergeToolResultIntoCase,
+  type ToolResult,
+} from "../lib/osint-tools";
 
 const GeoIntMap = dynamic(() => import("./GeoIntMap"), { ssr: false });
 
@@ -349,7 +357,7 @@ const MODULES = [
   { id: "vault", icon: "", name: "Reports", color: "#EC4899" },
 ];
 
-const NO_PROVIDER_HINT = "No LLM provider configured yet. Add an API key in the Settings panel (gear icon, top-right) to enable the assistant.\n\nMeanwhile, you can still drive investigations with slash commands:\n- `/hibp user@example.com` — query HaveIBeenPwned (works in demo mode without a key)\n- `/entity add DOMAIN acme-corp.com` — manually add a node to the graph\n- `/case list` — switch between investigations\n- `/mcp list` — connect to an MCP server (e.g. your `osint-agent-skills` MCP) and call its tools";
+const NO_PROVIDER_HINT = "No LLM provider configured yet. Add an API key in the Settings panel (gear icon, top-right) to enable the assistant.\n\nMeanwhile, you can still drive investigations with slash commands — all of these work without an LLM key:\n\n**OSINT tools** (auto-populate the graph):\n- `/hibp user@example.com` — HaveIBeenPwned breach lookup (demo mode works without key)\n- `/shodan 8.8.8.8` — Shodan host info (demo mode for 8.8.8.8 and 1.1.1.1)\n- `/whois example.com` — RDAP/WHOIS registration lookup (free, no key)\n- `/dns example.com A` — DNS records via Google DoH (free, no key; types: A, AAAA, MX, NS, TXT, CNAME, SOA)\n- `/wayback https://example.com` — Wayback Machine snapshot history (free, no key)\n\n**Manual graph editing:**\n- `/entity add DOMAIN acme-corp.com` — manually add a node\n- `/case list` — list all investigation cases\n\n**MCP:**\n- `/mcp list` — connect to an MCP server (e.g. your `osint-agent-skills` MCP)";
 
 const btnPri = { background: "#fff", border: "none", borderRadius: 6, color: "#000", fontSize: 11, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 };
 const btnSec = { background: "none", border: "1px solid #1a1a1a", borderRadius: 6, color: "#a0a0a0", fontSize: 11, padding: "6px 14px", cursor: "pointer", fontFamily: "inherit" };
@@ -584,6 +592,120 @@ export default function AbsterChat() {
           } else {
             reply = "Usage: `/case list` — list all investigation cases.";
           }
+        } else if (cmd.toLowerCase() === "shodan") {
+          const ip = arg;
+          if (!ip) {
+            reply = "Usage: `/shodan <ip>`\n\nLooks up host info via Shodan. Demo mode (no API key) returns canned data for `8.8.8.8` and `1.1.1.1`. Add a Shodan API key in Settings to query any IP.";
+          } else {
+            let shodanKey: string | undefined;
+            try {
+              const settings = await (await import("../lib/db")).db.settings.get("current_user_settings");
+              shodanKey = settings?.apiKeys?.shodan;
+            } catch {}
+            // Show an interim "querying" message so the user gets immediate feedback.
+            const interimId = generateId();
+            const interimMsg = { id: interimId, role: "assistant", content: "_Querying Shodan..._", timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            const messagesWithInterim = [...updatedMessages, interimMsg];
+            updateChat(activeChatId!, { messages: messagesWithInterim });
+            const result = await shodanLookup(ip, shodanKey);
+            const state = useAbsterStore.getState();
+            const fresh = state.entities.filter(e => e.caseId === caseId);
+            const merge = await mergeToolResultIntoCase(result, {
+              caseId: caseId!,
+              ownerId,
+              existingEntities: fresh,
+              addEntity: state.addEntity,
+              addRelation: state.addRelation,
+            });
+            // Replace the interim message by filtering it out and appending the final.
+            const finalText = `${result.summary}\n\n_Added ${merge.addedEntities} entities and ${merge.addedRelations} relations to the graph._`;
+            const finalMsg = { id: generateId(), role: "assistant", content: finalText, timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            // We need to read the LATEST messages (the store may have evolved), filter interim, append final.
+            const latest = useAbsterStore.getState().chats.find(c => c.id === activeChatId)?.messages || messagesWithInterim;
+            const filtered = latest.filter(m => m.id !== interimId);
+            updateChat(activeChatId!, { messages: [...filtered, finalMsg] });
+            return;
+          }
+        } else if (cmd.toLowerCase() === "whois") {
+          const domain = arg;
+          if (!domain) {
+            reply = "Usage: `/whois <domain>`\n\nQueries RDAP (free, no key) for registration info.";
+          } else {
+            const interimId = generateId();
+            const interimMsg = { id: interimId, role: "assistant", content: "_Querying RDAP/WHOIS..._", timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            const messagesWithInterim = [...updatedMessages, interimMsg];
+            updateChat(activeChatId!, { messages: messagesWithInterim });
+            const result = await whoisLookup(domain);
+            const state = useAbsterStore.getState();
+            const fresh = state.entities.filter(e => e.caseId === caseId);
+            const merge = await mergeToolResultIntoCase(result, {
+              caseId: caseId!,
+              ownerId,
+              existingEntities: fresh,
+              addEntity: state.addEntity,
+              addRelation: state.addRelation,
+            });
+            const finalText = `${result.summary}\n\n_Added ${merge.addedEntities} entities and ${merge.addedRelations} relations to the graph._`;
+            const finalMsg = { id: generateId(), role: "assistant", content: finalText, timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            const latest = useAbsterStore.getState().chats.find(c => c.id === activeChatId)?.messages || messagesWithInterim;
+            const filtered = latest.filter(m => m.id !== interimId);
+            updateChat(activeChatId!, { messages: [...filtered, finalMsg] });
+            return;
+          }
+        } else if (cmd.toLowerCase() === "dns") {
+          const parts = arg.split(/\s+/);
+          const domain = parts[0] || "";
+          const recordType = parts[1] || "A";
+          if (!domain) {
+            reply = "Usage: `/dns <domain> [record-type]`\n\nTypes: A, AAAA, MX, NS, TXT, CNAME, SOA. Default: A. Uses Google DNS-over-HTTPS (free, no key).";
+          } else {
+            const interimId = generateId();
+            const interimMsg = { id: interimId, role: "assistant", content: `_Querying DNS ${recordType} records..._`, timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            const messagesWithInterim = [...updatedMessages, interimMsg];
+            updateChat(activeChatId!, { messages: messagesWithInterim });
+            const result = await dnsLookup(domain, recordType);
+            const state = useAbsterStore.getState();
+            const fresh = state.entities.filter(e => e.caseId === caseId);
+            const merge = await mergeToolResultIntoCase(result, {
+              caseId: caseId!,
+              ownerId,
+              existingEntities: fresh,
+              addEntity: state.addEntity,
+              addRelation: state.addRelation,
+            });
+            const finalText = `${result.summary}\n\n_Added ${merge.addedEntities} entities and ${merge.addedRelations} relations to the graph._`;
+            const finalMsg = { id: generateId(), role: "assistant", content: finalText, timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            const latest = useAbsterStore.getState().chats.find(c => c.id === activeChatId)?.messages || messagesWithInterim;
+            const filtered = latest.filter(m => m.id !== interimId);
+            updateChat(activeChatId!, { messages: [...filtered, finalMsg] });
+            return;
+          }
+        } else if (cmd.toLowerCase() === "wayback") {
+          const url = arg;
+          if (!url) {
+            reply = "Usage: `/wayback <url>`\n\nQueries the Wayback Machine CDX API (free, no key) for archived snapshots.";
+          } else {
+            const interimId = generateId();
+            const interimMsg = { id: interimId, role: "assistant", content: "_Querying Wayback Machine..._", timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            const messagesWithInterim = [...updatedMessages, interimMsg];
+            updateChat(activeChatId!, { messages: messagesWithInterim });
+            const result = await waybackLookup(url);
+            const state = useAbsterStore.getState();
+            const fresh = state.entities.filter(e => e.caseId === caseId);
+            const merge = await mergeToolResultIntoCase(result, {
+              caseId: caseId!,
+              ownerId,
+              existingEntities: fresh,
+              addEntity: state.addEntity,
+              addRelation: state.addRelation,
+            });
+            const finalText = `${result.summary}\n\n_Added ${merge.addedEntities} entities and ${merge.addedRelations} relations to the graph._`;
+            const finalMsg = { id: generateId(), role: "assistant", content: finalText, timestamp: new Date().getTime(), attachments: [], provider: "slash", modelId: null };
+            const latest = useAbsterStore.getState().chats.find(c => c.id === activeChatId)?.messages || messagesWithInterim;
+            const filtered = latest.filter(m => m.id !== interimId);
+            updateChat(activeChatId!, { messages: [...filtered, finalMsg] });
+            return;
+          }
         } else if (cmd.toLowerCase() === "mcp") {
           const sub = rest[0]?.toLowerCase();
           const servers = await loadMcpServers();
@@ -639,7 +761,7 @@ export default function AbsterChat() {
             reply = "Usage:\n- `/mcp list` — list configured MCP servers\n- `/mcp tools <server-id>` — list tools exposed by a server\n- `/mcp call <server-id> <tool-name> {json-args}` — invoke a tool";
           }
         } else {
-          reply = `Unknown slash command: \`/${cmd}\`.\n\nAvailable: \`/hibp <email>\`, \`/entity add <TYPE> <name>\`, \`/case list\`, \`/mcp list|tools|call\`.`;
+          reply = `Unknown slash command: \`/${cmd}\`.\n\nAvailable: \`/hibp <email>\`, \`/shodan <ip>\`, \`/whois <domain>\`, \`/dns <domain> [type]\`, \`/wayback <url>\`, \`/entity add <TYPE> <name>\`, \`/case list\`, \`/mcp list|tools|call\`.`;
         }
       } catch (err: any) {
         reply = `Command failed: ${err?.message || "unknown error"}`;
