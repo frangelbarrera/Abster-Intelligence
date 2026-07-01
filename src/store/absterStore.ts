@@ -2,6 +2,33 @@ import { create } from 'zustand';
 import { db, LOCAL_USER, type Attachment, type AIProvider } from '../lib/db';
 import { generateId } from '../lib/utils';
 
+// Track object URLs created for vault-file blobs so we can revoke them on
+// removal / factory reset / re-load. Without this, long sessions with many
+// uploads leak memory because each URL.createObjectURL holds a Blob alive
+// until explicitly revoked or the document is unloaded.
+const objectUrls = new Set<string>();
+
+function trackObjectUrl(blob: Blob): string {
+  const url = URL.createObjectURL(blob);
+  objectUrls.add(url);
+  return url;
+}
+
+function revokeObjectUrl(url: string | undefined) {
+  if (!url) return;
+  if (objectUrls.has(url)) {
+    URL.revokeObjectURL(url);
+    objectUrls.delete(url);
+  }
+}
+
+function revokeAllObjectUrls() {
+  for (const url of objectUrls) {
+    try { URL.revokeObjectURL(url); } catch {}
+  }
+  objectUrls.clear();
+}
+
 export type EntityType = 'PERSON' | 'ORGANIZATION' | 'LOCATION' | 'EVENT' | 'DOCUMENT' | 'DEVICE' | 'EMAIL' | 'PHONE' | 'DOMAIN' | 'VEHICLE' | 'CRYPTO' | 'GENERIC';
 
 export interface Entity {
@@ -161,10 +188,14 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
       const dbChats = await db.chats.where('ownerId').equals(user.uid).toArray();
       const dbVaultFiles = await db.vaultFiles.where('ownerId').equals(user.uid).toArray();
       
-      // Generate temporary URLs for blobs
+      // Revoke any previously-issued object URLs before issuing new ones on
+      // re-load, otherwise each re-load leaks the previous batch.
+      revokeAllObjectUrls();
+      
+      // Generate temporary URLs for blobs (tracked for later revocation)
       const vaultFilesWithUrls = dbVaultFiles.map(f => {
         if (f.data) {
-          return { ...f, url: URL.createObjectURL(f.data) };
+          return { ...f, url: trackObjectUrl(f.data) };
         }
         return f;
       });
@@ -425,7 +456,7 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
     
     let url = file.url;
     if (file.data && !url) {
-      url = URL.createObjectURL(file.data);
+      url = trackObjectUrl(file.data);
     }
     
     const newFile = { ...file, url, ownerId: user.uid };
@@ -445,6 +476,9 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
   removeVaultFile: async (id) => {
     const user = get().currentUser;
     if (!user) return;
+    // Revoke the object URL before dropping the reference so the Blob can be GC'd.
+    const target = get().vaultFiles.find(f => f.id === id);
+    if (target?.url) revokeObjectUrl(target.url);
     set(s => ({ vaultFiles: s.vaultFiles.filter(f => f.id !== id) }));
     try {
       await db.vaultFiles.delete(id);
@@ -567,6 +601,7 @@ export const useAbsterStore = create<AbsterState>((set, get) => ({
         await db.vaultFiles.clear();
       });
       localStorage.clear();
+      revokeAllObjectUrls();
       set({ entities: [], relations: [], cases: [], chats: [], vaultFiles: [], activeCaseId: null });
     } catch (error) {
       console.error("Factory Reset failed:", error);
