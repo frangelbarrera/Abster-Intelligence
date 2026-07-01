@@ -5,17 +5,18 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
-> Information wants to be free, but intelligence must remain private. 
-> **Local-first OSINT workspace for investigators who can’t afford data leakage.**
+> Information wants to be free, but intelligence must remain private.
+> **Local-first OSINT workspace for investigators who can't afford data leakage.**
 
 ![Abster Intelligence Graph Engine](public/images/1.png)
 
-Abster Intelligence is a privacy-first investigation workspace for OSINT, GEOINT, and cyber research. Map entities in a live relationship graph, build timelines, analyze evidence, and query your case with your own LLM keys—without sending your investigations to a central database.
+Abster Intelligence is a privacy-first investigation workspace for OSINT, GEOINT, and cyber research. Map entities in a live relationship graph, build timelines, analyze evidence, query your case with your own LLM keys, run native OSINT tool lookups from the chat, generate shareable case URLs, and export Markdown / HTML / PDF reports — all without sending your investigations to a central database.
 
 **Why it stands out:**
 - **Local-first by default:** Cases, notes, evidence metadata, and provider settings stay in your browser via IndexedDB.
 - **Zero-trust platform model:** Bring your own keys (BYOK). Your keys are not stored by us, and investigation data stays local unless you explicitly query a third-party provider.
-- **Graph-native investigations:** Turn fragmented findings into connected entities, locations, and timelines using a dynamic D3.js engine.
+- **Graph-native investigations:** Turn fragmented findings into connected entities, locations, and timelines using a dynamic D3.js engine. The LLM auto-extracts entities from chat responses and inserts them into the graph.
+- **Backend-free collaboration:** Share a full investigation (graph + chat + entities) by sending a URL. The case data is compressed into the URL hash fragment, which is never sent to the server.
 
 ---
 
@@ -25,6 +26,8 @@ Abster Intelligence operates under a strict data sovereignty paradigm:
 * No Abster-hosted central case database is required or exists.
 * Provider keys are configured directly by the user in the UI.
 * The platform does not act as a mandatory data relay. When you use an external AI provider, your prompts go directly to them.
+* OSINT tool lookups (`/shodan`, `/whois`, `/dns`, `/wayback`, `/hibp`) hit the upstream API directly from your browser. No proxy, no relay, no logging.
+* Shareable case URLs encode the case data in the URL hash fragment (`#...`) — browsers never send the hash to the server, so even Vercel's access logs cannot see your case data.
 
 ## Core Features
 
@@ -34,17 +37,23 @@ Abster Intelligence operates under a strict data sovereignty paradigm:
 
 ![Reports and Evidence Center](public/images/7.png)
 
-* **Relational Graph Engine:** Interactive, physics-based network graphs powered by D3.js. Visualize interconnected nodes, geo-entities, and complex infrastructural relationships in real-time.
+* **Relational Graph Engine:** Interactive, physics-based network graphs powered by D3.js. Visualize interconnected nodes, geo-entities, and complex infrastructural relationships in real-time. Entities are auto-extracted from LLM responses and from OSINT tool results.
 
 ![Tactical GEOINT Map](public/images/3.png)
 
-* **Multi-LLM Integration:** Query your OSINT findings using 10 providers (OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, Cohere, Azure OpenAI, OpenRouter, local Ollama) — bring your own keys, switch on the fly.
+* **Multi-LLM Integration (BYOK):** Query your OSINT findings using 10 providers (OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, Cohere, Azure OpenAI, OpenRouter, local Ollama). Keys are stored locally in your browser and never transmitted through Abster.
 
 ![Multi-LLM Chat Interface](public/images/2.png)
 
-* **Automated Threat Timelines:** Auto-generation of events from investigative reports to track operations chronologically.
+* **Auto-Generated Timeline:** Timeline events are extracted automatically from entity dates, chat-message date mentions, activity log entries, and vault file uploads. Six event types are color-coded: communication, movement, transaction, publication, meeting, breach, mention, evidence, milestone, critical, warning, generic.
 
 ![Threat Timeline](public/images/4.png)
+
+* **Investigation Report Generator:** Export the active case as Markdown, self-contained HTML, or print-to-PDF. Includes case metadata, entities table, relations table, chat history (capped at 200 messages), activity log, findings, and hypotheses. All generated client-side.
+
+* **Shareable Case URLs:** Compress any case into a URL hash fragment and send it to a collaborator. They open the link, the case loads into their IndexedDB as a fresh copy. No backend, no account, no API keys. (Soft limit ~8 KB compressed.)
+
+* **Native OSINT Tools (no LLM key required):** Five slash commands hit free public APIs directly from the chat and auto-populate the graph with extracted entities + relations.
 
 * **XSS-Shielded Interface:** Hardened UI with strict DOM sanitization (`isomorphic-dompurify`) ensuring protection against script injections in rendered markdown.
 
@@ -67,29 +76,51 @@ Abster Intelligence operates under a strict data sovereignty paradigm:
 * **State Management:** Zustand
 * **Database:** Dexie.js (IndexedDB wrapper)
 * **Visualization:** D3.js
+* **Compression:** LZ-string (for shareable case URLs)
+* **Testing:** Playwright E2E
+* **CI:** GitHub Actions (lint + typecheck + build + e2e)
 
 ## Project Structure
-
-Here is a high-level overview of the Abster Intelligence codebase architecture. The project follows a modular, feature-based approach within the Next.js App Router paradigm.
 
 ```text
 abster-intelligence/
 ├── public/                 # Static assets and public resources
 ├── src/
 │   ├── app/                # Next.js 15 App Router (Pages, Layouts, APIs)
+│   │   ├── case/[id]/      # Deep-link to a specific case
+│   │   ├── case/demo/[slug]/ # Pre-built demo cases (breach, domain, person)
+│   │   ├── case/share/     # Shared case receiver (reads URL hash)
+│   │   └── api/flights/    # legacy helper endpoint
 │   ├── components/         # Core React Components
 │   │   ├── chat/           # Modular Chat UI (ChatInput, ChatSidebar, ChatMessageList)
 │   │   ├── ui/             # Reusable UI / Shadcn Elements
-│   │   ├── abster-graph-v4.tsx # D3.js Relational Graph Engine
-│   │   ├── abster-chat.tsx # Main Chat Orchestrator (Zustand/Dexie integration)
+│   │   ├── abster-graph-v4.tsx  # D3.js Relational Graph Engine
+│   │   ├── abster-chat.tsx # Main Chat Orchestrator (slash commands + LLM)
+│   │   ├── abster-timeline.tsx # Auto-generating timeline module
+│   │   ├── abster-reports.tsx  # Evidence vault + report generator
 │   │   └── GeoIntMap.tsx   # Geospatial Intelligence Map Engine
-│   ├── lib/                # Utilities (DOMPurify Security, Markdown parsing, Tools)
+│   ├── lib/                # Utilities (security, markdown, tools, sharing)
+│   │   ├── db.ts           # Dexie schema
+│   │   ├── hibp.ts         # HaveIBeenPwned integration with demo fallback
+│   │   ├── osint-tools.ts  # /shodan, /whois, /dns, /wayback native tools
+│   │   ├── entity-extraction.ts # LLM chat → graph auto-population
+│   │   ├── mcp-client.ts   # Generic MCP client (connect external MCP servers)
+│   │   ├── case-sharing.ts # Compressed URL hash share/decode
+│   │   ├── report-generator.ts # Markdown + HTML + PDF export
+│   │   ├── timeline-autogen.ts # Auto-extract timeline events
+│   │   ├── demo-cases.ts   # 3 pre-built investigation seeds
+│   │   ├── security.ts     # DOMPurify sanitization
+│   │   └── markdown.ts     # Markdown renderer
 │   ├── store/              # Zustand global state definitions
-│   └── data/               # Dexie.js (IndexedDB) Schema and DB connections
-├── package.json            # Project dependencies and operational scripts
-├── tailwind.config.ts      # Tailwind CSS configuration and theme
-└── next.config.ts          # Next.js compiler and build configuration
+│   └── data/               # Static data (OSINT tools catalog: 254 tools)
+├── tests/e2e/              # Playwright E2E tests
+├── .github/workflows/ci.yml # CI: lint + typecheck + build + e2e
+├── package.json
+├── tailwind.config.ts
+├── next.config.ts
+└── playwright.config.ts
 ```
+
 ## Quick Start
 
 ### Prerequisites
@@ -119,22 +150,40 @@ Three pre-built investigations render on deep-linkable URLs — handy for sharin
 These cases are read-only seeds; deleting one restores it on next page load. Your own cases live alongside them in the same IndexedDB store.
 
 **Configuration Note:**
-Abster Intelligence works out-of-the-box for case management and graphing. To enable multi-LLM queries, you must configure your provider API keys (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama) directly within the application's Settings UI. No `.env` setup is required for core functionality.
+Abster Intelligence works out-of-the-box for case management, graphing, slash-command OSINT lookups, and report generation. To enable multi-LLM queries, configure your provider API keys (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama, etc.) directly within the application's Settings UI. No `.env` setup is required for core functionality.
 
 ---
 
 ## Slash Commands
 
-When you don't want to burn an LLM token on a simple lookup, drive investigations directly from the chat input:
+When you don't want to burn an LLM token on a simple lookup, drive investigations directly from the chat input. All of these work without an LLM key:
+
+### OSINT tools (auto-populate the graph)
 
 | Command | Action |
 |---------|--------|
-| `/hibp user@example.com` | Query HaveIBeenPwned. In demo mode (no HIBP API key) only well-known sample emails return data; with a key, any email works against the live API. Breaches auto-populate the graph as `BREACHED_IN` events. |
+| `/hibp user@example.com` | Query HaveIBeenPwned. Demo mode (no key) returns data for well-known sample emails; with a key, any email hits the live API. Breaches auto-populate the graph as `BREACHED_IN` events. |
+| `/shodan 8.8.8.8` | Shodan host lookup. Demo mode (no key) returns canned data for `8.8.8.8` and `1.1.1.1`; with a key, any IP via the live API. Adds device, organization, and location entities + relations. |
+| `/whois example.com` | RDAP lookup via `rdap.org` bootstrap. Free, no key. Returns registrar, registrant, registration date, expiration, nameservers, status. |
+| `/dns example.com A` | DNS-over-HTTPS via Google's public resolver. Free, no key. Types: A, AAAA, MX, NS, TXT, CNAME, SOA. Default: A. |
+| `/wayback https://example.com` | Wayback Machine availability API. Free, no key. Returns the closest archived snapshot. Adds an `ARCHIVED_AT` event with the snapshot URL. |
+
+### Manual graph editing
+
+| Command | Action |
+|---------|--------|
 | `/entity add DOMAIN acme-corp.com [description]` | Manually add a node to the active case. Types: PERSON, ORGANIZATION, DOMAIN, EMAIL, PHONE, DEVICE, LOCATION, EVENT, DOCUMENT, VEHICLE, CRYPTO, GENERIC. |
 | `/case list` | List all investigation cases in your local DB. |
+
+### MCP server bridge
+
+| Command | Action |
+|---------|--------|
 | `/mcp list` | List configured MCP servers. |
 | `/mcp tools <server-id>` | List tools exposed by a configured MCP server. |
 | `/mcp call <server-id> <tool-name> {json-args}` | Invoke an MCP tool and surface its output in the chat. |
+
+---
 
 ## Connecting an MCP Server (e.g. your `osint-agent-skills`)
 
@@ -158,9 +207,68 @@ Abster speaks JSON-RPC 2.0 over `fetch` and supports the standard `tools/list` a
 
 ---
 
+## Sharing a Case (backend-free collaboration)
+
+Click the **↗ SHARE** button in the active-case header (top of the chat). Abster will:
+
+1. Serialize the case (metadata + entities + relations + chat messages) to JSON.
+2. Compress it with LZ-string's `compressToEncodedURIComponent`.
+3. Pack the compressed string into the URL hash fragment of `/case/share#<data>`.
+4. Copy the URL to your clipboard.
+
+Send that URL to a collaborator via DM, email, Slack — whatever. When they open it:
+- They auto-login as LOCAL_USER (no setup wall).
+- The case is decoded and seeded into their IndexedDB as a fresh copy with new IDs (so it won't clobber any existing case with the same id).
+- The case appears in their sidebar as `ORIGINAL-CODENAME-RECV` with title `Original Title (shared copy)`.
+
+**Size limit:** practical cross-browser URL length is ~8 KB compressed. Abster warns you if the case exceeds 7 KB and suggests using the Markdown / HTML export in the Reports module instead.
+
+**Privacy:** the URL hash fragment (`#...`) is never sent to the server by the browser spec. Even if Vercel's access logs captured the full URL, they would not see the case data.
+
+---
+
+## Investigation Reports
+
+Open the **REPORTS** module (sidebar) and switch to the **REPORT** tab. Three export formats are available:
+
+| Format | What it produces |
+|--------|------------------|
+| **MARKDOWN** | Downloads a `.md` file. Pasteable into GitHub, Notion, Slack. |
+| **HTML** | Downloads a self-contained `.html` file with inline CSS. Openable in any browser, shareable as a single file. |
+| **PRINT / PDF** | Opens a new window with the HTML and triggers the browser print dialog. Pick "Save as PDF" for a printable artifact. |
+
+The report includes:
+- Case metadata (code name, status, priority, classification, lead investigator, dates, tags)
+- Entities table (type, name, confidence, source, verified, description)
+- Relations table (source, type, target, label, date)
+- Chat history (capped at 200 messages)
+- Activity log
+- Findings and hypotheses
+
+All generation happens client-side. No data leaves your browser.
+
+---
+
+## Timeline Auto-Generation
+
+Open the **TIMELINE** module to see a chronological view of the active case. Events are auto-extracted from four sources:
+
+1. **Entities** with `startDate` or `endDate` (manual or set via slash commands like `/wayback`).
+2. **Relations** with a `date` field.
+3. **Chat messages**: dates mentioned in user messages are extracted via regex (ISO 8601, US `MM/DD/YYYY`, EU `DD.MM.YYYY`, long form `March 15, 2024`, inverse long `15 March 2024`).
+4. **Activity log** entries (each log has a timestamp).
+5. **Vault file uploads** (using `uploadedAt`).
+6. **Case creation** as a fallback milestone event so a fresh case isn't a blank timeline.
+
+Twelve event types are color-coded: communication, movement, transaction, publication, meeting, breach, mention, evidence, milestone, critical, warning, generic.
+
+The timeline supports timeline / list view modes, drag-to-scroll, zoom, play/pause animation, and pattern detection (gaps between events).
+
+---
+
 ## Testing
 
-End-to-end tests are powered by [Playwright](https://playwright.dev/) and cover the landing page, cold-start login, and the three demo deep-links.
+End-to-end tests are powered by [Playwright](https://playwright.dev/) and cover the landing page, cold-start login, the three demo deep-links, and the shareable-case flow.
 
 ```bash
 # Run the full E2E suite (builds + starts prod server automatically)
@@ -174,12 +282,8 @@ Continuous integration runs `lint`, `tsc --noEmit`, `next build`, and the Playwr
 
 ## Known Issues
 
-These are documented for transparency — none are launch-blockers but all are tracked for follow-up:
-
-- **Blob URL memory leak** in `src/store/absterStore.ts` (lines 167 and 428): `URL.createObjectURL(file.data)` is called when loading vault files but the corresponding `URL.revokeObjectURL()` is never called when files are removed. Long sessions with many uploads will slowly leak memory.
-- **React Hooks order** in `src/components/abster-timeline.tsx` (lines 885, 928, 980): `useCallback` and `useEffect` are called conditionally after an early return. This violates the rules-of-hooks and can cause inconsistent renders when the timeline module is toggled.
-- **`<img>` vs `next/image`**: four call sites in `abster-graph-v4.tsx`, `abster-reports.tsx`, and `global-search.tsx` use raw `<img>` tags. Migrating to `next/image` would improve LCP and bandwidth.
-- **No user-facing error state** when `loadInitialData` fails: the loading spinner is dismissed but the user is left on a blank shell. Should be surfaced as a toast with a retry button.
+- **`<img>` tags for blob URLs:** vault-file previews and entity avatars use raw `<img>` tags because `next/image` provides no optimization benefit for IndexedDB blob URLs. The `@next/next/no-img-element` rule is disabled for those three files via an ESLint override.
+- **No user-facing error state for tool failures:** if a `/shodan` or `/whois` request fails (network error, CORS, invalid key), the error is shown in the chat as text but no retry button is offered. Use the slash command again to retry.
 
 ## 🤝 Contributing
 
@@ -191,7 +295,7 @@ Abster Intelligence is an open-source project and **contributions are welcome**.
 
 ## 🛡️ Security Policy
 
-As a tool built for investigators, we take security and privacy seriously. 
+As a tool built for investigators, we take security and privacy seriously.
 
 * **Reporting Vulnerabilities:** If you discover a security vulnerability within Abster Intelligence, please **do not open a public issue**. Instead, report it via the Security tab or contact the maintainers directly.
 * **Data Privacy:** Abster Intelligence does not collect telemetry. Your investigative data remains yours.
