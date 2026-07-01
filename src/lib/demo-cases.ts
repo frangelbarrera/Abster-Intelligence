@@ -1,4 +1,4 @@
-import type { Case, Entity, Relation } from "../store/absterStore";
+import type { Case, Entity, Relation, Chat } from "../store/absterStore";
 import { generateId } from "./utils";
 
 // Demo cases are deterministic so deep-links like /case/demo/breach always render the same graph.
@@ -9,6 +9,7 @@ export interface DemoCase {
   caseData: Case;
   entities: Entity[];
   relations: Relation[];
+  chat: Chat;
 }
 
 const now = () => new Date().toISOString();
@@ -63,6 +64,18 @@ const DEMO_BREACH: DemoCase = {
     { id: "r-demo-003", caseId: "demo-breach-case", source: "e-demo-001", target: "e-demo-005", type: "BREACHED_IN", label: "2019", ownerId: "local-operator-001" } as Relation,
     { id: "r-demo-004", caseId: "demo-breach-case", source: "e-demo-004", target: "e-demo-003", type: "AFFECTED_ORG", ownerId: "local-operator-001" } as Relation,
   ],
+  chat: {
+    id: "demo-breach-chat",
+    title: "Email Breach Investigation — Demo",
+    caseId: "demo-breach-case",
+    ownerId: "local-operator-001",
+    createdAt: now(),
+    updatedAt: now(),
+    messages: [
+      { id: "m-demo-001", role: "user", content: "Find breaches for test@example.com", timestamp: Date.now() - 60000, provider: "demo-seed" as any },
+      { id: "m-demo-002", role: "assistant", content: "Found 2 breach records for `test@example.com`:\n\n- **LinkedIn** (2021-06-22) — 700M accounts. Compromised: Emails, Phone numbers, Names\n- **Collection #1** (2019-01-07) — 772M accounts. Compromised: Emails, Passwords\n\nEntities auto-added to the graph: 5 nodes, 4 relations.", timestamp: Date.now() - 55000, provider: "demo-seed" as any },
+    ],
+  },
 };
 
 const DEMO_DOMAIN: DemoCase = {
@@ -92,6 +105,18 @@ const DEMO_DOMAIN: DemoCase = {
     { id: "r-dom-005", caseId: "demo-domain-case", source: "e-dom-004", target: "e-dom-006", type: "RESOLVES_TO", ownerId: "local-operator-001" } as Relation,
     { id: "r-dom-006", caseId: "demo-domain-case", source: "e-dom-005", target: "e-dom-007", type: "RESOLVES_TO", ownerId: "local-operator-001" } as Relation,
   ],
+  chat: {
+    id: "demo-domain-chat",
+    title: "Domain Reconnaissance — Demo",
+    caseId: "demo-domain-case",
+    ownerId: "local-operator-001",
+    createdAt: now(),
+    updatedAt: now(),
+    messages: [
+      { id: "m-dom-001", role: "user", content: "Pivot on acme-corp.com — WHOIS, DNS, subdomains", timestamp: Date.now() - 60000, provider: "demo-seed" as any },
+      { id: "m-dom-002", role: "assistant", content: "Pivoted on `acme-corp.com`:\n\n- WHOIS: registrant redacted, owned by Acme Corp LLC\n- DNS: 2 subdomains resolved (www, mail) -> 2 A records\n\n7 entities auto-added to the graph.", timestamp: Date.now() - 55000, provider: "demo-seed" as any },
+    ],
+  },
 };
 
 const DEMO_PERSON: DemoCase = {
@@ -119,6 +144,18 @@ const DEMO_PERSON: DemoCase = {
     { id: "r-per-004", caseId: "demo-person-case", source: "e-per-001", target: "e-per-005", type: "HAS_PROFILE", label: "Twitter/X", ownerId: "local-operator-001" } as Relation,
     { id: "r-per-005", caseId: "demo-person-case", source: "e-per-001", target: "e-per-006", type: "LOCATED_IN", ownerId: "local-operator-001" } as Relation,
   ],
+  chat: {
+    id: "demo-person-chat",
+    title: "Person-of-Interest Investigation — Demo",
+    caseId: "demo-person-case",
+    ownerId: "local-operator-001",
+    createdAt: now(),
+    updatedAt: now(),
+    messages: [
+      { id: "m-per-001", role: "user", content: "Pivot on Jane Doe across socials, employer, location", timestamp: Date.now() - 60000, provider: "demo-seed" as any },
+      { id: "m-per-002", role: "assistant", content: "Pivoted on Jane Doe (public figure):\n\n- LinkedIn: linkedin.com/in/jane-doe\n- Twitter/X: @janedoe\n- Employer: Example Inc.\n- Email: jane.doe@example.com\n- Location: San Francisco, CA\n\n6 entities auto-added to the graph.", timestamp: Date.now() - 55000, provider: "demo-seed" as any },
+    ],
+  },
 };
 
 export const DEMO_CASES: Record<string, DemoCase> = {
