@@ -340,12 +340,12 @@ export default function AbsterLanding({ onLogin }: { onLogin: (email?: string, p
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
   const features = [
-    { icon:<Icon d={icons.search} size={18} />, title:"Deep Search", desc:"Index social networks, domains, IPs, leaked databases, and the deep web in seconds with zero exposure." },
-    { icon:<Icon d={icons.network} size={18} />, title:"Relationship Graphs", desc:"Visualize connections between entities, individuals, organizations, and digital assets with precision." },
-    { icon:<Icon d={icons.alert} size={18} />, title:"Real-Time Alerts", desc:"Continuous monitoring with instant notifications upon detection of high-risk intelligence events." },
-    { icon:<Icon d={icons.shield} size={18} />, title:"Threat Analysis", desc:"AI engine that correlates data to identify threat actors, behavioral patterns, and attack vectors." },
-    { icon:<Icon d={icons.globe} size={18} />, title:"Global Coverage", desc:"Sources across 47 languages. Darkweb, clearnet, social networks and public records fully integrated." },
-    { icon:<Icon d={icons.eye} size={18} />, title:"Passive Surveillance", desc:"Full OSINT operations without leaving a trace. Complete operator anonymity guaranteed on all queries." },
+    { icon:<Icon d={icons.search} size={18} />, title:"Tool Catalog", desc:"Browse 254 curated OSINT tools across 17 categories. Launch external sources in one click, or wire your own via MCP." },
+    { icon:<Icon d={icons.network} size={18} />, title:"Relationship Graphs", desc:"Visualize connections between entities, individuals, organizations, and digital assets with a physics-based D3 engine." },
+    { icon:<Icon d={icons.alert} size={18} />, title:"Case Timeline", desc:"Track investigation events chronologically with an auto-generated activity log per case." },
+    { icon:<Icon d={icons.shield} size={18} />, title:"Bring Your Own LLM", desc:"10 providers supported. Keys stay in your browser, never sent to a relay. Queries go directly to the provider you choose." },
+    { icon:<Icon d={icons.globe} size={18} />, title:"GEOINT Ready", desc:"Tag entities with lat/lng and render them on a Leaflet map overlay for geospatial investigations." },
+    { icon:<Icon d={icons.eye} size={18} />, title:"Local-First", desc:"All cases, notes, and evidence metadata live in IndexedDB. No telemetry, no central database, no data leakage." },
   ];
 
   return (
@@ -480,7 +480,7 @@ export default function AbsterLanding({ onLogin }: { onLogin: (email?: string, p
             </h1>
 
             <p style={{ fontFamily:"'Space Mono',monospace",fontSize:"clamp(10px,1.1vw,12px)",color:"#333",lineHeight:2,marginBottom:36,maxWidth:440 }}>
-              Transform massive datasets into actionable intelligence within seconds. Track threat actors, map digital relationships, and monitor exposure — with surgical precision.
+              Build, query, and visualize your investigations in a local-first workspace. Map entities in a live relationship graph, pivot across domains, emails, and people — then bring your own LLM key to ask questions of the case.
             </p>
 
             <div style={{ display:"flex",gap:12,flexWrap:"wrap" }}>
