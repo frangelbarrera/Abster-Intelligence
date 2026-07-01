@@ -1,26 +1,82 @@
 import React, { useState, useMemo } from 'react';
 import { useAbsterStore } from '../store/absterStore';
-import { 
-  X, Search, Filter, Download, Trash2, FileText, Image as ImageIcon, 
+import {
+  X, Search, Filter, Download, Trash2, FileText, Image as ImageIcon,
   FileCode, File, HardDrive, Calendar, HardDrive as SizeIcon, Tag,
-  Grid, List as ListIcon, Clock, ArrowUpDown, Eye
+  Grid, List as ListIcon, Clock, ArrowUpDown, Eye,
+  FileDown, Printer, FileCode2
 } from 'lucide-react';
+import {
+  generateMarkdownReport,
+  generateHtmlReport,
+  downloadFile,
+  printHtml,
+  slugify,
+  type ReportInputs,
+} from '../lib/report-generator';
+
+type ReportsTab = 'evidence' | 'report';
 
 export default function AbsterReports({ onClose }: { onClose: () => void }) {
-  const { vaultFiles, activeCaseId, removeVaultFile, chats } = useAbsterStore();
+  const { vaultFiles, activeCaseId, removeVaultFile, chats, cases, entities, relations } = useAbsterStore();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'size' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  
+  const [activeTab, setActiveTab] = useState<ReportsTab>('evidence');
+
   // Viewer State
   const [viewingFile, setViewingFile] = useState<any | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
+
+  const activeCase = useMemo(() => cases.find(c => c.id === activeCaseId), [cases, activeCaseId]);
 
   const caseFiles = useMemo(() => {
     const caseChatIds = new Set(chats.filter(c => c.caseId === activeCaseId).map(c => c.id));
     return vaultFiles.filter(f => caseChatIds.has(f.chatId));
   }, [vaultFiles, activeCaseId, chats]);
+
+  // Generate report inputs for the active case (memoized so export buttons
+  // don't re-stringify on every render).
+  const reportInputs = useMemo<ReportInputs | null>(() => {
+    if (!activeCase) return null;
+    return {
+      caseData: activeCase,
+      entities: entities.filter(e => e.caseId === activeCase.id),
+      relations: relations.filter(r => r.caseId === activeCase.id),
+      chats: chats.filter(c => c.caseId === activeCase.id),
+    };
+  }, [activeCase, entities, relations, chats]);
+
+  const markdownPreview = useMemo(() => {
+    if (!reportInputs) return "";
+    return generateMarkdownReport(reportInputs);
+  }, [reportInputs]);
+
+  const handleExportMarkdown = () => {
+    if (!reportInputs || !activeCase) return;
+    downloadFile(
+      `${slugify(activeCase.codeName)}-report.md`,
+      markdownPreview,
+      "text/markdown;charset=utf-8",
+    );
+  };
+
+  const handleExportHtml = () => {
+    if (!reportInputs || !activeCase) return;
+    const html = generateHtmlReport(reportInputs);
+    downloadFile(
+      `${slugify(activeCase.codeName)}-report.html`,
+      html,
+      "text/html;charset=utf-8",
+    );
+  };
+
+  const handlePrintPdf = () => {
+    if (!reportInputs) return;
+    const html = generateHtmlReport(reportInputs);
+    printHtml(html);
+  };
 
   const filteredAndSortedFiles = useMemo(() => {
     let result = caseFiles.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
@@ -146,21 +202,93 @@ export default function AbsterReports({ onClose }: { onClose: () => void }) {
           <div>
             <h1 className="text-sm font-bold tracking-widest uppercase">Reports & Evidence Center</h1>
             <div className="text-[10px] text-zinc-500 tracking-wider">
-              {caseFiles.length} FILES · {formatSize(caseFiles.reduce((a, b) => a + b.size, 0))} TOTAL
+              {activeCase ? `${activeCase.codeName} · ${activeCase.title}` : 'NO ACTIVE CASE'} · {caseFiles.length} FILES · {formatSize(caseFiles.reduce((a, b) => a + b.size, 0))} TOTAL
             </div>
           </div>
         </div>
-        
-        <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-md transition-colors text-zinc-400 hover:text-white">
-          <X size={20} />
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* Tab switcher */}
+          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 mr-2">
+            <button
+              onClick={() => setActiveTab('evidence')}
+              className={`px-3 py-1.5 rounded-md text-[11px] font-bold tracking-wider transition-colors ${activeTab === 'evidence' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              EVIDENCE
+            </button>
+            <button
+              onClick={() => setActiveTab('report')}
+              className={`px-3 py-1.5 rounded-md text-[11px] font-bold tracking-wider transition-colors ${activeTab === 'report' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              REPORT
+            </button>
+          </div>
+
+          <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-md transition-colors text-zinc-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="p-4 border-b border-zinc-900 bg-zinc-950 flex items-center justify-between gap-4 shrink-0">
-        <div className="relative w-96">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input 
+      {activeTab === 'report' ? (
+        /* ─── Report generator tab ─── */
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {!activeCase ? (
+            <div className="flex-1 flex items-center justify-center text-zinc-500">
+              <div className="text-center">
+                <FileText size={48} className="mx-auto opacity-30 mb-3" />
+                <div className="text-sm">No active case selected.</div>
+                <div className="text-[11px] text-zinc-600 mt-1">Select a case from the dashboard to generate a report.</div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="p-4 border-b border-zinc-900 bg-zinc-950 flex items-center justify-between gap-3 shrink-0">
+                <div className="text-[11px] text-zinc-400">
+                  Generate a self-contained investigation report from the active case.
+                  All exports are produced client-side; no data leaves your browser.
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExportMarkdown}
+                    className="px-3 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-md text-[11px] font-bold tracking-wider flex items-center gap-2 transition-colors"
+                    title="Download as Markdown (.md)"
+                  >
+                    <FileDown size={14} /> MARKDOWN
+                  </button>
+                  <button
+                    onClick={handleExportHtml}
+                    className="px-3 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-md text-[11px] font-bold tracking-wider flex items-center gap-2 transition-colors"
+                    title="Download as HTML (.html)"
+                  >
+                    <FileCode2 size={14} /> HTML
+                  </button>
+                  <button
+                    onClick={handlePrintPdf}
+                    className="px-3 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-md text-[11px] font-bold tracking-wider flex items-center gap-2 transition-colors"
+                    title="Open print dialog (Save as PDF)"
+                  >
+                    <Printer size={14} /> PRINT / PDF
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto p-6 bg-[#070707]">
+                <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Markdown preview (read-only)</div>
+                <pre className="text-[11px] text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed bg-zinc-950 border border-zinc-900 rounded-md p-4">
+                  {markdownPreview}
+                </pre>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        /* ─── Evidence vault tab (original UI) ─── */
+        <>
+          {/* Toolbar */}
+          <div className="p-4 border-b border-zinc-900 bg-zinc-950 flex items-center justify-between gap-4 shrink-0">
+            <div className="relative w-96">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <input 
             type="text" 
             placeholder="Search evidence by name..." 
             value={search}
@@ -304,6 +432,8 @@ export default function AbsterReports({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* File Viewer Modal */}
       {viewingFile && (
