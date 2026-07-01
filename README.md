@@ -1,6 +1,6 @@
 # Abster Intelligence
 
-![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
+![License](https://img.shields.io/badge/license-Apache--2.0-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
@@ -38,7 +38,7 @@ Abster Intelligence operates under a strict data sovereignty paradigm:
 
 ![Tactical GEOINT Map](public/images/3.png)
 
-* **Multi-LLM Integration:** Query your OSINT findings using multiple providers (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama) simultaneously.
+* **Multi-LLM Integration:** Query your OSINT findings using 10 providers (OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, Cohere, Azure OpenAI, OpenRouter, local Ollama) — bring your own keys, switch on the fly.
 
 ![Multi-LLM Chat Interface](public/images/2.png)
 
@@ -106,10 +106,36 @@ npm run dev
 ```
 Open `http://localhost:3000` in your browser.
 
+### Try the Demo Cases (no setup required)
+
+Three pre-built investigations render on deep-linkable URLs — handy for sharing with collaborators or posting on HN/Reddit without making the audience configure an LLM key first:
+
+| URL | What it shows |
+|-----|---------------|
+| `/case/demo/breach` | Email → HaveIBeenPwned breach graph (5 entities, 4 relations) |
+| `/case/demo/domain` | Domain pivot — WHOIS, DNS, subdomains, infrastructure (7 entities, 6 relations) |
+| `/case/demo/person` | Person-of-interest pivot across socials, employer, location (6 entities, 5 relations) |
+
+These cases are read-only seeds; deleting one restores it on next page load. Your own cases live alongside them in the same IndexedDB store.
+
 **Configuration Note:**
 Abster Intelligence works out-of-the-box for case management and graphing. To enable multi-LLM queries, you must configure your provider API keys (OpenAI, Anthropic, Gemini, DeepSeek, Local Ollama) directly within the application's Settings UI. No `.env` setup is required for core functionality.
 
 ---
+
+## Testing
+
+End-to-end tests are powered by [Playwright](https://playwright.dev/) and cover the landing page, cold-start login, and the three demo deep-links.
+
+```bash
+# Run the full E2E suite (builds + starts prod server automatically)
+npm run test:e2e
+
+# Interactive UI mode for local debugging
+npm run test:e2e:ui
+```
+
+Continuous integration runs `lint`, `tsc --noEmit`, `next build`, and the Playwright suite on every push and pull request — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## 🤝 Contributing
 
@@ -128,4 +154,4 @@ As a tool built for investigators, we take security and privacy seriously.
 
 ## 📜 License
 
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License, Version 2.0** - see the [LICENSE](LICENSE) file for details.

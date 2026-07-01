@@ -8,7 +8,10 @@
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
@@ -62,12 +65,14 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^20",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
     "eslint": "^8",
     "eslint-config-next": "15.5.9",
     "genkit-cli": "^1.28.0",
+    "playwright": "^1.61.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
