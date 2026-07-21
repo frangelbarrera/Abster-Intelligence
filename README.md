@@ -4,6 +4,13 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+[![License: MIT](https://img.shields.io/github/license/frangelbarrera/Abster-Intelligence?style=flat-square)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/frangelbarrera/Abster-Intelligence?style=flat-square)](https://github.com/frangelbarrera/Abster-Intelligence/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/frangelbarrera/Abster-Intelligence?style=flat-square)](https://github.com/frangelbarrera/Abster-Intelligence/commits)
+[![Issues](https://img.shields.io/github/issues/frangelbarrera/Abster-Intelligence?style=flat-square)](https://github.com/frangelbarrera/Abster-Intelligence/issues)
+[![Top Language](https://img.shields.io/github/languages/top/frangelbarrera/Abster-Intelligence?style=flat-square)](https://github.com/frangelbarrera/Abster-Intelligence)
+[![Contributors](https://img.shields.io/github/contributors/frangelbarrera/Abster-Intelligence?style=flat-square)](https://github.com/frangelbarrera/Abster-Intelligence/graphs/contributors)
+[![Repo Size](https://img.shields.io/github/repo-size/frangelbarrera/Abster-Intelligence?style=flat-square)](https://github.com/frangelbarrera/Abster-Intelligence)
 
 > Information wants to be free, but intelligence must remain private.
 > **Local-first OSINT workspace for investigators who can't afford data leakage.**
