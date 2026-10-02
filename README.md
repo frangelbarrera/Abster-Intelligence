@@ -347,3 +347,7 @@ As a tool built for investigators, we take security and privacy seriously.
 ## 📜 License
 
 This project is licensed under the **Apache License, Version 2.0** - see the [LICENSE](LICENSE) file for details.
+
+## Privacy and data scope
+
+See [docs/privacy-and-data-scope.md](docs/privacy-and-data-scope.md).
