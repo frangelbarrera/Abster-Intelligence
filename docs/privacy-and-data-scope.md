@@ -1,5 +1,13 @@
-# Privacy and data scope
+**Maintainer:** Frangel Raúl Crespo Barrera
+**Last verified:** 2026-10-02
+**Scope:** sources, browser permissions, local storage, telemetry, exports, headers, and application data boundaries.
 
-Document the sources used by the application, browser permissions, local storage, telemetry, export behavior, and retention. Environment variables should be listed with fictional values only.
+| Field | Current record |
+|---|---|
+| Status | Next.js application with E2E coverage; privacy and security claims require runtime evidence. |
+| Evidence | `src/`, `tests/e2e/`, `package.json`, `next.config.ts`, `.github/workflows/ci.yml`. |
+| Verification | Use the existing lint/typecheck/build and Playwright commands; inspect `next.config.ts` for headers/CSP. |
+| Owner | Repository owner; deployment operator owns provider configuration. |
+| Limitations | This page does not claim secure defaults, GDPR compliance, or isolation without deployment evidence. |
 
-Security headers, CSP, authentication, authorization, and data isolation require application-level evidence; this document does not claim that a deployment is secure or compliant by default.
+List actual environment variables with fictional values only. Document storage, export, telemetry, and retention behavior when implementation changes.
